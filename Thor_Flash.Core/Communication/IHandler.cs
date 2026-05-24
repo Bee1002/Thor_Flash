@@ -30,6 +30,9 @@ public interface IHandler {
     /// <summary>Antes del lote NAND completo.</summary>
     void PrepareForFlashBatch() { ReadZLP(); }
 
+    /// <summary>Consulta DVIF (solo COM/serial; WinUSB Thor no soporta DVIF sin romper LOKE).</summary>
+    bool SupportsDeviceInfoQuery => false;
+
     /// <summary>COM: usar <see cref="SerialFlashOperations"/> en lugar de Thor USB.</summary>
     bool UsesSerialFlashAlignment => false;
 

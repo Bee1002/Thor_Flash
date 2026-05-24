@@ -36,6 +36,8 @@ public sealed class FlashPartitionItem : INotifyPropertyChanged {
 
 public sealed class FlashProgressReport {
     public string Message { get; init; } = "";
+    /// <summary>Imagen recién flasheada con éxito (para log estilo Odin).</summary>
+    public string? CompletedFlashFile { get; init; }
     /// <summary>Bytes enviados del lote completo (BL+AP+CP+CSC).</summary>
     public long SentBytes { get; init; }
     /// <summary>Bytes totales del lote completo.</summary>
@@ -436,6 +438,8 @@ public static class OdinOperations {
         var totalBytes = SumSelectedBytes(selected);
         if (orderedGroups.Any(g => GetOdinTarSlotOrder(g.Key) == 0))
             odin.BootloaderUpdate = true;
+        odin.Handler.PrepareForOdin();
+        odin.Handler.PrepareForFlashBatch();
         Log.Information(
             "Flash lote: BootloaderUpdate={BlUpdate}, EfsClear={EfsClear}, ResetFlashCount={Reset}",
             odin.BootloaderUpdate, odin.EfsClear, odin.ResetFlashCount);
@@ -456,6 +460,7 @@ public static class OdinOperations {
 
             foreach (var item in orderedItems) {
                 cancellationToken.ThrowIfCancellationRequested();
+                odin.Handler.OnFlashPartitionBoundary();
                 bytesCompleted += FlashTarEntry(
                     odin, group.Key, item.FileName, item.PitEntry,
                     totalBytes, bytesCompleted, progress, cancellationToken);
@@ -593,6 +598,13 @@ public static class OdinOperations {
                 progress?.Report(MakeFlashReport(
                     detail, info, partitionBytes, bytesCompletedBefore, batchTotalBytes));
             }, partitionBytes);
+            progress?.Report(new FlashProgressReport {
+                CompletedFlashFile = fileName,
+                SentBytes = Math.Min(bytesCompletedBefore + partitionBytes, batchTotalBytes),
+                TotalBytes = batchTotalBytes,
+                PartitionSentBytes = partitionBytes,
+                PartitionTotalBytes = partitionBytes
+            });
         } finally {
             lz4Stream?.Dispose();
         }
@@ -619,6 +631,8 @@ public static class OdinOperations {
             var fileBytes = filePath.EndsWith(".lz4", StringComparison.OrdinalIgnoreCase)
                 ? ReadLz4DecompressedSize(filePath, 0, Path.GetFileName(filePath))
                 : stream.Length;
+            odin.Handler.PrepareForOdin();
+            odin.Handler.PrepareForFlashBatch();
             odin.InitializeFlashTotal(fileBytes);
             progress?.Report(MakeFlashReport(
                 $"Flasheando {Path.GetFileName(filePath)} → {pitEntry.Partition}…",
@@ -629,6 +643,13 @@ public static class OdinOperations {
                     : "Enviando datos…";
                 progress?.Report(MakeFlashReport(detail, info, fileBytes, 0, fileBytes));
             }, fileBytes);
+            progress?.Report(new FlashProgressReport {
+                CompletedFlashFile = Path.GetFileName(filePath),
+                SentBytes = fileBytes,
+                TotalBytes = fileBytes,
+                PartitionSentBytes = fileBytes,
+                PartitionTotalBytes = fileBytes
+            });
             odin.SendResetFlashCount();
         } finally {
             if (ownsExtra)

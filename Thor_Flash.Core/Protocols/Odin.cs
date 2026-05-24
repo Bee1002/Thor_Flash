@@ -11,6 +11,8 @@ public class Odin {
     private const int SessionStartTimeoutMs = 30000;
     private const int PitBlockSize = 500;
     private const int PitTimeoutMs = 120000;
+    /// <summary>ACK LOKE durante inicio de flash (SetTotalBytes, RequestFileFlash…).</summary>
+    private const int FlashCmdTimeoutMs = 120000;
 
     public struct VersionStruct {
         public byte Unknown1;
@@ -134,7 +136,7 @@ public class Odin {
         buf.WriteInt((int)(total & 0xFFFFFFFF), 8);
         buf.WriteInt((int)(total >> 32), 12);
         _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read);
+        buf = _handler.BulkRead(8, out var read, FlashCmdTimeoutMs);
         if (read != 8) throw new InvalidDataException(
             $"Received {read} bytes instead of 8!");
         buf.OdinFailCheck("SetTotalBytes");
@@ -248,7 +250,7 @@ public class Odin {
         progress?.Report(new PitDumpProgress {
             Message = "Solicitando PIT al bootloader (puede tardar en BL v3)…"
         });
-        Log.Information("PIT: solicitando volcado…");
+        Log.Debug("PIT: solicitando volcado…");
 
         var buf = new byte[1024];
         buf.WriteInt(0x65, 0);
@@ -263,7 +265,7 @@ public class Odin {
             throw new InvalidDataException($"Tamaño PIT inválido: {size} bytes");
 
         var blocks = (int)Math.Ceiling(size / (double)PitBlockSize);
-        Log.Information("PIT: {Size} bytes, {Blocks} bloques", size, blocks);
+        Log.Debug("PIT: {Size} bytes, {Blocks} bloques", size, blocks);
         progress?.Report(new PitDumpProgress {
             Message = $"PIT: {size:N0} bytes ({blocks} bloques)…",
             TotalBlocks = blocks
@@ -306,7 +308,7 @@ public class Odin {
         buf.OdinFailCheck("EndPitDump");
 
         progress?.Report(new PitDumpProgress { Message = "PIT leído correctamente." });
-        Log.Information("PIT: volcado completado ({Size} bytes)", size);
+        Log.Debug("PIT: volcado completado ({Size} bytes)", size);
         return pitBuf;
     }
     
@@ -381,7 +383,7 @@ public class Odin {
         buf.WriteInt(0x66, 0);
         buf.WriteInt(0x00, 4);
         _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read);
+        buf = _handler.BulkRead(8, out var read, FlashCmdTimeoutMs);
         if (read != 8) throw new InvalidDataException(
             $"Received {read} bytes instead of 8!");
         buf.OdinFailCheck("RequestFileFlash");
@@ -407,7 +409,7 @@ public class Odin {
             buf.WriteInt(0x02, 4);
             buf.WriteInt(alignedSize, 8);
             _handler.BulkWrite(buf);
-            buf = _handler.BulkRead(8, out read);
+            buf = _handler.BulkRead(8, out read, FlashCmdTimeoutMs);
             if (read != 8) throw new InvalidDataException(
                 $"Received {read} bytes instead of 8!");
             buf.OdinFailCheck($"RequestSequenceFlash/{i}");

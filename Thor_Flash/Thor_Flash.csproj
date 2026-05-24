@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Thor_Flash</RootNamespace>
     <AssemblyName>Thor_Flash</AssemblyName>
+    <Version>1.0.1</Version>
     <ApplicationIcon>Assets\ThorFlash.ico</ApplicationIcon>
   </PropertyGroup>
 
