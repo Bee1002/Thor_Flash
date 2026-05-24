@@ -1,4 +1,4 @@
-namespace TheAirBlow.Thor.Library.Communication; 
+namespace Protocol.Thor.Library.Communication; 
 
 public class DeviceInfo {
     public string DisplayName { get; set; } = "";

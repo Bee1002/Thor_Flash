@@ -1,11 +1,13 @@
-﻿<Window x:Class="OdinThorFlash.MainWindow"
+﻿<Window x:Class="Thor_Flash.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="OdinThorFlash — Thor para Windows (WPF)" Height="680" Width="960"
-        MinHeight="500" MinWidth="800">
+        Title="Thor_Flash — Flasheo Odin Samsung"
+        Icon="Assets/ThorFlash_icon.png"
+        Height="700" Width="980"
+        MinHeight="520" MinWidth="820">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -16,20 +18,22 @@
         <TabControl Grid.Row="0" x:Name="MainTabs">
             <TabItem Header="Dispositivo">
                 <StackPanel Margin="8">
-                    <TextBlock TextWrapping="Wrap" Foreground="#444" Margin="0,0,0,12"
-                               Text="Conexión USB y sesión Odin. Tras «Fin sesión» o reinicio, vuelve a modo Download y reconecta (igual que Thor)."/>
+                    <TextBlock Style="{StaticResource TfHintText}" Margin="0,0,0,12"
+                               Text="Conexión USB y sesión Odin. Tras «Fin sesión» o reinicio, vuelve a modo Download y reconecta."/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <ComboBox x:Name="DeviceCombo" Width="400" Margin="0,0,8,0"
                                   DisplayMemberPath="DisplayName" IsEnabled="False"/>
                         <Button x:Name="RefreshButton" Content="Actualizar" Width="90" Margin="0,0,8,0" Click="RefreshButton_Click"/>
                         <Button x:Name="DiagnoseButton" Content="Diagnóstico" Width="95" Margin="0,0,8,0" Click="DiagnoseButton_Click"/>
                         <Button x:Name="DriverHelpButton" Content="Guía WinUSB" Width="95" Margin="0,0,8,0" Click="DriverHelpButton_Click"/>
-                        <Button x:Name="ConnectButton" Content="Conectar USB" Width="110" Margin="0,0,8,0" Click="ConnectButton_Click"/>
-                        <Button x:Name="BeginOdinButton" Content="Iniciar Odin" Width="100" Margin="0,0,8,0" Click="BeginOdinButton_Click" IsEnabled="False"/>
+                        <Button x:Name="ConnectButton" Content="Conectar USB" Width="110" Margin="0,0,8,0"
+                                Style="{StaticResource TfPrimaryButton}" Click="ConnectButton_Click"/>
+                        <Button x:Name="BeginOdinButton" Content="Iniciar Odin" Width="100" Margin="0,0,8,0"
+                                Style="{StaticResource TfPrimaryButton}" Click="BeginOdinButton_Click" IsEnabled="False"/>
                         <Button x:Name="EndOdinButton" Content="Fin sesión" Width="90" Margin="0,0,8,0" Click="EndOdinButton_Click" IsEnabled="False"/>
                         <Button x:Name="DisconnectButton" Content="Desconectar" Width="95" Click="DisconnectButton_Click" IsEnabled="False"/>
                     </StackPanel>
-                    <TextBlock x:Name="OdinInfoText" Foreground="#333" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="OdinInfoText" TextWrapping="Wrap" Foreground="{StaticResource TfTextBrush}"/>
                 </StackPanel>
             </TabItem>
 
@@ -44,7 +48,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,6"
+                    <TextBlock Grid.Row="0" Style="{StaticResource TfHintText}" Margin="0,0,0,6"
                                Text="Carpeta o un solo .tar/.tar.md5 de Odin. Escanear cruza nombres del archivo con el PIT del teléfono."/>
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBox x:Name="TarFolderBox" Width="400" Margin="0,0,8,0"
@@ -72,15 +76,16 @@
                         </DataGrid.Columns>
                     </DataGrid>
                     <StackPanel Grid.Row="4" Margin="0,0,0,8">
-                        <TextBlock Text="Imagen actual (similar al teléfono por partición)" FontSize="11" Foreground="#666"/>
+                        <TextBlock Text="Imagen actual (similar al teléfono por partición)" FontSize="11" Style="{StaticResource TfHintText}"/>
                         <ProgressBar x:Name="FlashPartitionProgress" Height="18" Minimum="0" Maximum="100" Margin="0,2,0,6"/>
-                        <TextBlock Text="Lote completo BL → AP → CP → CSC" FontSize="11" Foreground="#666"/>
+                        <TextBlock Text="Lote completo BL → AP → CP → CSC" FontSize="11" Style="{StaticResource TfHintText}"/>
                         <ProgressBar x:Name="FlashProgress" Height="22" Minimum="0" Maximum="100"/>
                     </StackPanel>
                     <StackPanel Grid.Row="5" Orientation="Horizontal">
-                        <Button x:Name="FlashTarButton" Content="Flashear selección" Width="140" Margin="0,0,8,0" Click="FlashTarButton_Click"/>
+                        <Button x:Name="FlashTarButton" Content="Flashear selección" Width="140" Margin="0,0,8,0"
+                                Style="{StaticResource TfPrimaryButton}" Click="FlashTarButton_Click"/>
                         <Button x:Name="CancelFlashButton" Content="Cancelar" Width="90" IsEnabled="False" Click="CancelFlashButton_Click"/>
-                        <TextBlock x:Name="FlashStatusText" VerticalAlignment="Center" Foreground="#555" Margin="12,0,0,0"/>
+                        <TextBlock x:Name="FlashStatusText" VerticalAlignment="Center" Margin="12,0,0,0" Style="{StaticResource TfHintText}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -90,11 +95,12 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBox x:Name="SingleFileBox" Width="480" Margin="0,0,8,0"/>
                         <Button Content="Archivo…" Width="80" Margin="0,0,8,0" Click="BrowseSingleFile_Click"/>
-                        <Button x:Name="FlashFileButton" Content="Flashear archivo" Width="130" Click="FlashFileButton_Click"/>
+                        <Button x:Name="FlashFileButton" Content="Flashear archivo" Width="130"
+                                Style="{StaticResource TfPrimaryButton}" Click="FlashFileButton_Click"/>
                     </StackPanel>
                     <ComboBox x:Name="PartitionCombo" Width="480" Margin="0,0,0,8"
                               DisplayMemberPath="Partition" IsEnabled="False"/>
-                    <TextBlock TextWrapping="Wrap" Foreground="#666" MaxWidth="520"
+                    <TextBlock Style="{StaticResource TfHintText}" MaxWidth="520"
                                Text="Si el nombre del archivo coincide con el PIT, se elige la partición automáticamente."/>
                 </StackPanel>
             </TabItem>
@@ -113,20 +119,21 @@
                         <Button x:Name="FlashPitButton" Content="Flashear PIT…" Width="110" Click="FlashPitButton_Click"/>
                     </StackPanel>
                     <TextBox Grid.Row="1" x:Name="PitViewBox" IsReadOnly="True" TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"/>
+                             VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"
+                             Style="{StaticResource TfLogTextBox}"/>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Avanzado (Thor)" x:Name="AdvancedTab" IsEnabled="False">
+            <TabItem Header="Avanzado" x:Name="AdvancedTab" IsEnabled="False">
                 <StackPanel Margin="8">
-                    <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"
-                               Text="Comandos extra del shell Thor (erasePartition, setRegion, flashPit, options tflash)."/>
-                    <TextBlock Text="Código de región (setRegion, 3 letras)" Margin="0,0,0,4"/>
+                    <TextBlock Style="{StaticResource TfHintText}" Margin="0,0,0,10"
+                               Text="Comandos avanzados: borrar partición, código de región y opciones extra de protocolo."/>
+                    <TextBlock Text="Código de región (setRegion, 3 letras)" Style="{StaticResource TfSectionTitle}" Margin="0,0,0,4"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                         <TextBox x:Name="RegionCodeBox" Width="60" MaxLength="3" CharacterCasing="Upper" Margin="0,0,8,0"/>
                         <Button x:Name="SetRegionButton" Content="Aplicar región" Width="110" Click="SetRegionButton_Click"/>
                     </StackPanel>
-                    <TextBlock Text="Borrar partición (erasePartition — usa tamaño del PIT)" Margin="0,0,0,4"/>
+                    <TextBlock Text="Borrar partición (erasePartition — usa tamaño del PIT)" Style="{StaticResource TfSectionTitle}" Margin="0,0,0,4"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <ComboBox x:Name="ErasePartitionCombo" Width="280" Margin="0,0,8,0"
                                   DisplayMemberPath="Partition"/>
@@ -139,16 +146,17 @@
                 <StackPanel Margin="8">
                     <Button Content="Reiniciar dispositivo" Width="160" Margin="0,0,0,8" HorizontalAlignment="Left" Click="RebootButton_Click"/>
                     <Button Content="Reiniciar a modo Download" Width="200" Margin="0,0,0,8" HorizontalAlignment="Left" Click="RebootOdinButton_Click"/>
-                    <TextBlock TextWrapping="Wrap" Foreground="#666"
+                    <TextBlock Style="{StaticResource TfHintText}"
                                Text="Usa estos botones o «Reinicio automático» tras flashear. No reinicies con botones físicos en Download: puede aparecer la pantalla azul «An error has occurred while updating the device software»."/>
                 </StackPanel>
             </TabItem>
         </TabControl>
 
         <TextBox Grid.Row="1" x:Name="LogBox" IsReadOnly="True" TextWrapping="Wrap"
-                 VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"
-                 Background="#1e1e1e" Foreground="#d4d4d4" BorderBrush="#3c3c3c" Margin="0,8,0,0"/>
+                 VerticalScrollBarVisibility="Auto"
+                 Style="{StaticResource TfLogTextBox}"
+                 Margin="0,8,0,0"/>
 
-        <TextBlock Grid.Row="2" x:Name="StatusText" Margin="0,8,0,0" Foreground="#666"/>
+        <TextBlock Grid.Row="2" x:Name="StatusText" Margin="0,8,0,0" Style="{StaticResource TfStatusBar}"/>
     </Grid>
 </Window>

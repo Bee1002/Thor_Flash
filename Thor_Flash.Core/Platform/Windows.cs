@@ -4,10 +4,10 @@ using LibUsbDotNet.Info;
 using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using Serilog;
-using TheAirBlow.Thor.Library.Communication;
-using TheAirBlow.Thor.Library;
+using Protocol.Thor.Library.Communication;
+using Protocol.Thor.Library;
 
-namespace TheAirBlow.Thor.Library.Platform;
+namespace Protocol.Thor.Library.Platform;
 
 public sealed class WindowsUsbHandler : IHandler, IDisposable {
     private static UsbContext? _sharedContext;

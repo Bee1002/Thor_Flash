@@ -1,16 +1,14 @@
-# OdinThorFlash
+# Thor_Flash
 
-**Réplica de [Samsung-Loki/Thor](https://github.com/Samsung-Loki/Thor) para Windows con interfaz WPF.**
+**Herramienta de flasheo Odin para Samsung en Windows con interfaz WPF.**
 
-Thor original es una consola (.NET) con protocolo Odin completo en `TheAirBlow.Thor.Library`, pero **solo implementa USB en Linux**. Este proyecto usa **la misma librería de protocolo** (en `OdinThorFlash.Core`) y añade:
+Motor de protocolo completo (LOKE, flash, PIT, reinicio) en `Protocol.Thor.Library` (`Thor_Flash.Core`), con capa USB nativa para Windows.
 
-| Componente | Thor upstream | OdinThorFlash |
-|------------|---------------|---------------|
-| Protocolo Odin (LOKE, flash, PIT, reinicio) | `TheAirBlow.Thor.Library` | Igual en `OdinThorFlash.Core` |
-| USB | Linux DevFS | **Windows** (`Platform/Windows.cs`, LibUsbDotNet + WinUSB/Zadig) |
-| Interfaz | Consola `TheAirBlow.Thor.Shell` | **WPF** `OdinThorFlash` |
-
-No es un “inspirado en” Odin genérico: es **el código Thor** adaptado a escritorio Windows.
+| Componente | Implementación |
+|------------|----------------|
+| Protocolo Odin (LOKE, flash, PIT, reinicio) | `Protocol.Thor.Library` en `Thor_Flash.Core` |
+| USB | **Windows** (`Platform/Windows.cs`, LibUsbDotNet + WinUSB/Zadig) |
+| Interfaz | **WPF** `Thor_Flash` |
 
 ## Requisitos
 
@@ -21,23 +19,23 @@ No es un “inspirado en” Odin genérico: es **el código Thor** adaptado a es
 ## Compilar y ejecutar
 
 ```bash
-dotnet build OdinThorFlash.sln -c Release
+dotnet build Thor_Flash.sln -c Release
 ```
 
-Ejecutable: `OdinThorFlash\bin\Release\net8.0-windows\OdinThorFlash.exe`
+Ejecutable: `Thor_Flash\bin\Release\net8.0-windows\Thor_Flash.exe`
 
-## Flujo (equivalente a la consola Thor)
+## Flujo de sesión
 
 1. `connect` → **Conectar USB**
 2. `begin` → **Iniciar Odin**
 3. Comandos Odin (tablas abajo)
 4. `end` → **Fin sesión**
-5. `disconnect` → **Desconectar** — tras flash o fin de sesión, **reinicia el teléfono en Download** ([aviso oficial Thor])
+5. `disconnect` → **Desconectar** — tras flash o fin de sesión, **reinicia el teléfono en Download**
 
-## Comandos Thor → pantallas WPF
+## Comandos → pantallas WPF
 
-| Comando Thor | En OdinThorFlash |
-|--------------|------------------|
+| Comando | En Thor_Flash |
+|---------|---------------|
 | `connect` | Dispositivo → Conectar USB |
 | `begin` | Iniciar Odin |
 | `end` | Fin sesión |
@@ -53,13 +51,13 @@ Ejecutable: `OdinThorFlash\bin\Release\net8.0-windows\OdinThorFlash.exe`
 | `options efsclear` | Flash firmware → casilla **EFS Clear** |
 | `options blupdate/resetfc` | Automático en el motor al flashear `.tar` (BL en lote → bootloader update; reset flash count al final) |
 | `reboot` / reinicio Odin | Reinicio (+ **Reinicio automático** tras flash) |
-| `write` / `read` raw USB | Solo en shell Thor (no en WPF) |
+| `write` / `read` raw USB | No disponible en la interfaz WPF |
 
 ## Estructura del repositorio
 
 ```
-OdinThorFlash.sln
-├── OdinThorFlash.Core/          # Motor: protocolo Odin (TheAirBlow.Thor.Library) + USB Windows
+Thor_Flash.sln
+├── Thor_Flash.Core/             # Motor: Protocol.Thor.Library + USB Windows
 │   ├── Communication/           # IHandler, USB, dispositivos
 │   ├── Protocols/               # LOKE/Odin (handshake, flash, PIT, reinicio)
 │   ├── Platform/                # WinUSB (LibUsbDotNet, ZLP, interfaces CDC 0x0A)
@@ -67,11 +65,11 @@ OdinThorFlash.sln
 │   ├── OdinOperations.cs        # Flash .tar, progreso, escaneo firmware
 │   ├── OdinSession.cs           # Sesión USB + Odin (API de alto nivel)
 │   └── SerialFlashOperations.cs # Reservado: flash por COM (no usado en Windows USB)
-├── OdinThorFlash/               # App WPF (solo UI; referencia al Core)
+├── Thor_Flash/                  # App WPF (solo UI; referencia al Core)
 ├── docs/                        # WinUSB, flashear firmware
 └── drivers/                     # INF ejemplo Samsung 04E8:685D
 ```
 
 ## Licencia
 
-El núcleo deriva de [Samsung-Loki/Thor](https://github.com/Samsung-Loki/Thor) (**MPL-2.0**).
+**MPL-2.0** — ver [LICENSE](LICENSE).

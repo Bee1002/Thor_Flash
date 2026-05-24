@@ -1,4 +1,4 @@
-namespace TheAirBlow.Thor.Library;
+namespace Protocol.Thor.Library;
 
 public static class Lookup {
     private static string[]? _split;

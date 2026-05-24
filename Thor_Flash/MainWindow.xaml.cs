@@ -4,11 +4,11 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Serilog;
-using TheAirBlow.Thor.Library;
-using TheAirBlow.Thor.Library.Communication;
-using TheAirBlow.Thor.Library.PIT;
+using Protocol.Thor.Library;
+using Protocol.Thor.Library.Communication;
+using Protocol.Thor.Library.PIT;
 
-namespace OdinThorFlash;
+namespace Thor_Flash;
 
 public partial class MainWindow : Window {
     private readonly OdinSession? _session;
@@ -49,7 +49,7 @@ public partial class MainWindow : Window {
         } catch (Exception ex) {
             AppendLog($"Inicio fallido: {ex.Message}");
             StatusText.Text = "Error al iniciar";
-            MessageBox.Show(ex.Message, "OdinThorFlash", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, "Thor_Flash", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -57,8 +57,8 @@ public partial class MainWindow : Window {
         if (_session == null || _refreshTimer == null)
             return;
         try {
-            AppendLog("OdinThorFlash = Thor (Samsung-Loki) + WPF + USB Windows.");
-            AppendLog("https://github.com/Samsung-Loki/Thor — protocolo en OdinThorFlash.Core");
+            AppendLog("Thor_Flash — flasheo Odin para Windows (WPF + USB WinUSB).");
+            AppendLog("Motor: Protocol.Thor.Library (Thor_Flash.Core).");
             AppendLog("USB handler v5 (flash NAND 10 min, PIT progreso, ZLP 1024B).");
             AppendLog(_session.Handler.GetNotes());
             await LoadUsbIdsAsync();
@@ -67,7 +67,7 @@ public partial class MainWindow : Window {
         } catch (Exception ex) {
             AppendLog($"Carga inicial: {ex.Message}");
             Log.Debug(ex, "OnLoaded");
-            MessageBox.Show(ex.Message, "OdinThorFlash", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(ex.Message, "Thor_Flash", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -467,7 +467,7 @@ public partial class MainWindow : Window {
         if (_session == null || !_session.IsOdinActive) return;
         var code = RegionCodeBox.Text.Trim().ToUpperInvariant();
         if (code.Length != 3) {
-            AppendLog("Código de región: exactamente 3 letras (Thor setRegion).");
+            AppendLog("Código de región: exactamente 3 letras.");
             return;
         }
 

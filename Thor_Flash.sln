@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36811.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OdinThorFlash", "OdinThorFlash\OdinThorFlash.csproj", "{40D77689-89BB-4318-AB2B-57B7BF3061DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thor_Flash", "Thor_Flash\Thor_Flash.csproj", "{40D77689-89BB-4318-AB2B-57B7BF3061DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OdinThorFlash.Core", "OdinThorFlash.Core\OdinThorFlash.Core.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thor_Flash.Core", "Thor_Flash.Core\Thor_Flash.Core.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

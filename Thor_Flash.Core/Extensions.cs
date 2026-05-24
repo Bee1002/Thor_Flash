@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace TheAirBlow.Thor.Library; 
+namespace Protocol.Thor.Library; 
 
 public static class Extensions {
     public static string Ansify(this string input)

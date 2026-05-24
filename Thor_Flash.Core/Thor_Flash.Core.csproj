@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RootNamespace>TheAirBlow.Thor.Library</RootNamespace>
-    <AssemblyName>OdinThorFlash.Core</AssemblyName>
+    <RootNamespace>Protocol.Thor.Library</RootNamespace>
+    <AssemblyName>Thor_Flash.Core</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

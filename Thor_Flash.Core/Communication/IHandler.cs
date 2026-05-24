@@ -1,4 +1,4 @@
-namespace TheAirBlow.Thor.Library.Communication; 
+namespace Protocol.Thor.Library.Communication; 
 
 public interface IHandler {
     public string GetNotes();

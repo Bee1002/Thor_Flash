@@ -1,6 +1,6 @@
 using LibUsbDotNet;
 
-namespace TheAirBlow.Thor.Library.Platform;
+namespace Protocol.Thor.Library.Platform;
 
 internal sealed record OdinUsbInterface(
     int Number,

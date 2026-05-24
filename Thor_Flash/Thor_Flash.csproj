@@ -6,11 +6,18 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <RootNamespace>Thor_Flash</RootNamespace>
+    <AssemblyName>Thor_Flash</AssemblyName>
+    <ApplicationIcon>Assets\ThorFlash.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\ThorFlash_icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Serilog" Version="4.3.0" />
-    <ProjectReference Include="..\OdinThorFlash.Core\OdinThorFlash.Core.csproj" />
+    <ProjectReference Include="..\Thor_Flash.Core\Thor_Flash.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
-using TheAirBlow.Thor.Library.Platform;
+using Protocol.Thor.Library.Platform;
 
-namespace TheAirBlow.Thor.Library.Communication;
+namespace Protocol.Thor.Library.Communication;
 
 public static class USB {
     public const int Vendor = 0x04E8;

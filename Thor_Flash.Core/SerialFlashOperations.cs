@@ -1,15 +1,15 @@
-using TheAirBlow.Thor.Library.Communication;
-using TheAirBlow.Thor.Library.PIT;
-using TheAirBlow.Thor.Library.Protocols;
+using Protocol.Thor.Library.Communication;
+using Protocol.Thor.Library.PIT;
+using Protocol.Thor.Library.Protocols;
 
-namespace TheAirBlow.Thor.Library;
+namespace Protocol.Thor.Library;
 
 /// <summary>
 /// Flash NAND por puerto COM — layout LOKE de Odin_Flash (distinto al bulk USB de Thor).
 /// </summary>
 /// <remarks>
 /// Reservado para un futuro <see cref="Communication.IHandler"/> serial.
-/// OdinThorFlash Windows usa <see cref="Protocols.Odin.FlashPartition"/> vía WinUSB;
+/// Thor_Flash Windows usa <see cref="Protocols.Odin.FlashPartition"/> vía WinUSB;
 /// no llama a esta clase. Requiere cablear <see cref="Protocols.Odin.ApplyHandlerFlashProfile"/>
 /// al iniciar sesión si se añade un handler COM.
 /// </remarks>

@@ -1,6 +1,6 @@
-# Flashear firmware (flujo Thor en OdinThorFlash)
+# Flashear firmware (flujo Thor en Thor_Flash)
 
-Basado en [Samsung-Loki/Thor](https://github.com/Samsung-Loki/Thor) — misma lógica de PIT + `.tar` que el comando `flashTar`.
+Basado en el protocolo Odin estándar — misma lógica de PIT + `.tar` que un flasheo por lotes.
 
 ## Orden recomendado
 
@@ -24,7 +24,7 @@ Basado en [Samsung-Loki/Thor](https://github.com/Samsung-Loki/Thor) — misma l�
 
 Significa que el teléfono **no respondió LOKE** tras enviar `ODIN`. Suele pasar si:
 
-1. Ya usaste **Iniciar Odin** o flasheaste antes **sin** reiniciar el teléfono en Download (regla de [Thor](https://github.com/Samsung-Loki/Thor)).
+1. Ya usaste **Iniciar Odin** o flasheaste antes **sin** reiniciar el teléfono en Download.
 2. WinUSB está en la **interfaz equivocada** (debe ser CDC Data **0x0A**, no módem 0x02).
 
 **Solución:** **Desconectar** en la app → apagar/reiniciar modo Download → **Conectar** → **Iniciar Odin** (solo una vez; espera hasta 30 s).

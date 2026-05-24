@@ -36,7 +36,7 @@ AddReg = Dev_AddReg
 HKR,,DeviceInterfaceGUIDs,0x10000,"{88BAE032-5A81-49f0-BC3D-A4FF138216D6}"
 
 [Strings]
-ManufacturerName = "OdinThorFlash"
+ManufacturerName = "Thor_Flash"
 Samsung.Odin.MI0   = "Samsung Odin Download (04E8:685D) Interface 0"
 Samsung.Odin.MI1   = "Samsung Odin Download (04E8:685D) Interface 1"
 Samsung.Odin.MI2   = "Samsung Odin Download (04E8:685D) Interface 2"

@@ -1,4 +1,4 @@
-namespace TheAirBlow.Thor.Library.PIT; 
+namespace Protocol.Thor.Library.PIT; 
 
 public class PitEntry {
     public int BinaryType { get; set; }

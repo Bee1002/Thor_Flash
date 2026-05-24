@@ -4,10 +4,10 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using K4os.Compression.LZ4.Streams;
 using Serilog;
-using TheAirBlow.Thor.Library.PIT;
-using TheAirBlow.Thor.Library.Protocols;
+using Protocol.Thor.Library.PIT;
+using Protocol.Thor.Library.Protocols;
 
-namespace TheAirBlow.Thor.Library;
+namespace Protocol.Thor.Library;
 
 public sealed class FlashPartitionItem : INotifyPropertyChanged {
     public required string TarPath { get; init; }

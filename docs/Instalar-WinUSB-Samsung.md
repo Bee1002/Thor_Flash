@@ -48,7 +48,7 @@ Esa es la que suele tener driver `SAMSUNG Mobile USB Modem`.
 
 1. **Desenchufa** el USB.
 2. Vuelve a entrar en **modo Download**.
-3. Abre OdinThorFlash → **Actualizar** → **Conectar USB**.
+3. Abre Thor_Flash → **Actualizar** → **Conectar USB**.
 
 Si el log dice `Apertura: OK` o conecta sin error de driver, ya está.
 
@@ -76,9 +76,9 @@ Solo úsalo si sabes instalar drivers sin firmar o en entorno de pruebas.
 
 ---
 
-## Comprobar en OdinThorFlash
+## Comprobar en Thor_Flash
 
-Al iniciar debe salir: `USB handler v2 (corregido orden Open/detach).`
+Al iniciar debe salir en el log: `USB handler v5 (flash NAND 10 min, PIT progreso, ZLP 1024B).`
 
 Tras Zadig, **Diagnóstico** debería mostrar:
 
@@ -106,4 +106,4 @@ Luego **Conectar USB** → **Iniciar Odin**.
 
 - [DeviceHunt: 04E8:685D Download mode](https://devicehunt.com/view/type/usb/vendor/04E8/device/685D)
 - [Zadig (libwdi)](https://github.com/pbatard/libwdi/wiki/Zadig)
-- Thor / protocolo Odin: [Samsung-Loki/Thor](https://github.com/Samsung-Loki/Thor)
+- Protocolo Odin / LOKE: documentación en `docs/`

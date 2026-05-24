@@ -1,10 +1,10 @@
 using System.Text;
 using Serilog;
-using TheAirBlow.Thor.Library;
-using TheAirBlow.Thor.Library.Communication;
-using TheAirBlow.Thor.Library.PIT;
+using Protocol.Thor.Library;
+using Protocol.Thor.Library.Communication;
+using Protocol.Thor.Library.PIT;
 
-namespace TheAirBlow.Thor.Library.Protocols; 
+namespace Protocol.Thor.Library.Protocols; 
 
 public class Odin {
     private const int HandshakeTimeoutMs = 30000;
@@ -104,14 +104,12 @@ public class Odin {
 
         if (Version.Unknown1 != 0) {
             Log.Information("Unknown1 is not zero: {0:x2}", Version.Unknown1);
-            Log.Information("Please contact me (TheAirBlow) about this in XDA DMs!");
-            Log.Information("If you would cooperate, we could uncover hidden features!");
+            Log.Information("Campo de versión desconocido — conviene reportarlo al desarrollador de Thor_Flash.");
         }
         
         if (Version.Unknown2 != 0) {
             Log.Information("Unknown2 is not zero: {0:x2}", Version.Unknown2);
-            Log.Information("Please contact me (TheAirBlow) about this in XDA DMs!");
-            Log.Information("If you would cooperate, we could uncover hidden features!");
+            Log.Information("Campo de versión desconocido — conviene reportarlo al desarrollador de Thor_Flash.");
         }
 
         if (Version.Version > 1) {

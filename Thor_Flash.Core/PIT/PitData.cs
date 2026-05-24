@@ -1,6 +1,6 @@
-using TheAirBlow.Thor.Library;
+using Protocol.Thor.Library;
 
-namespace TheAirBlow.Thor.Library.PIT; 
+namespace Protocol.Thor.Library.PIT; 
 
 public class PitData {
     public readonly List<PitEntry> Entries = [];
