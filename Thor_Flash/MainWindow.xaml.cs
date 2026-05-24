@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Serilog;
@@ -25,6 +28,8 @@ public partial class MainWindow : Window {
     private bool _suppressAutoUntilRemoved;
     private bool _manualEndOdin;
     private bool _sessionHeaderWritten;
+    private DateTime? _flashStartedUtc;
+    private long _flashTotalBytes;
 
     private static string AppVersion {
         get {
@@ -48,7 +53,6 @@ public partial class MainWindow : Window {
             if (!OdinSession.IsPlatformSupported) {
                 var err = USB.GetHandlerError();
                 AppendLog(err != null ? $"ERROR USB: {err}" : "ERROR: Plataforma no soportada.");
-                StatusText.Text = "USB no disponible";
                 return;
             }
 
@@ -65,9 +69,10 @@ public partial class MainWindow : Window {
             };
         } catch (Exception ex) {
             AppendLog($"Inicio fallido: {ex.Message}");
-            StatusText.Text = "Error al iniciar";
             MessageBox.Show(ex.Message, "Thor_Flash", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        UpdateConnectionStatus();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e) {
@@ -81,6 +86,7 @@ public partial class MainWindow : Window {
             RefreshDevices();
             _refreshTimer.Start();
             UpdateReadyIndicator();
+            UpdateConnectionStatus();
         } catch (Exception ex) {
             AppendLog($"Carga inicial: {ex.Message}");
             Log.Debug(ex, "OnLoaded");
@@ -344,10 +350,7 @@ public partial class MainWindow : Window {
             Dispatcher.BeginInvoke(DispatcherPriority.Background, () => {
                 if (p.TotalBlocks > 0)
                     FlashProgress.Value = Math.Min(100, p.BlockIndex * 100.0 / p.TotalBlocks);
-                FlashStatusText.Text = p.Message;
             });
-            if (!silent && !string.IsNullOrWhiteSpace(p.Message))
-                FlashStatusText.Text = p.Message;
         });
 
     private async Task<PitData> EnsureDevicePitAsync(CancellationToken ct) {
@@ -457,7 +460,7 @@ public partial class MainWindow : Window {
         _sessionLog.WriteCalculatedSize(OdinOperations.SumSelectedBytes(selected));
         var progress = new Progress<FlashProgressReport>(r => {
             UpdateFlashProgress(r);
-            FlashStatusText.Text = r.Message;
+            SetFlashActivity(r.Message);
             if (!string.IsNullOrEmpty(r.CompletedFlashFile))
                 _sessionLog.WriteFlashOk(r.CompletedFlashFile);
         });
@@ -466,8 +469,8 @@ public partial class MainWindow : Window {
             await Task.Run(() => OdinOperations.FlashSelected(
                 _session.RequireOdin(), selected, progress, ct), ct);
             await TryAutoRebootAfterFlashAsync(ct);
-            _sessionLog.WriteSuccess();
-        });
+            WriteFlashCompletedSummary();
+        }, trackFlashActivity: true, flashTotalBytes: OdinOperations.SumSelectedBytes(selected));
     }
 
     private void BrowseSingleFile_Click(object sender, RoutedEventArgs e) {
@@ -519,7 +522,7 @@ public partial class MainWindow : Window {
         SyncOdinOptionsFromUi();
         var progress = new Progress<FlashProgressReport>(r => {
             UpdateFlashProgress(r);
-            FlashStatusText.Text = r.Message;
+            SetFlashActivity(r.Message);
             if (!string.IsNullOrEmpty(r.CompletedFlashFile))
                 _sessionLog.WriteFlashOk(r.CompletedFlashFile);
         });
@@ -528,8 +531,8 @@ public partial class MainWindow : Window {
             await Task.Run(() => OdinOperations.FlashSingleFile(
                 _session.RequireOdin(), path, entry, progress, ct), ct);
             await TryAutoRebootAfterFlashAsync(ct);
-            _sessionLog.WriteSuccess();
-        });
+            WriteFlashCompletedSummary();
+        }, trackFlashActivity: true, flashTotalBytes: new FileInfo(path).Length);
     }
 
     private async void DumpPitButton_Click(object sender, RoutedEventArgs e) {
@@ -622,7 +625,6 @@ public partial class MainWindow : Window {
 
         var progress = new Progress<FlashProgressReport>(r => {
             UpdateFlashProgress(r);
-            FlashStatusText.Text = r.Message;
         });
 
         await RunBusyAsync("Borrando partición…", async ct => {
@@ -699,26 +701,39 @@ public partial class MainWindow : Window {
         }
     }
 
-    private void CancelFlashButton_Click(object sender, RoutedEventArgs e) {
+    private void StopButton_Click(object sender, RoutedEventArgs e) {
         _operationCts?.Cancel();
-        AppendLog("Cancelación solicitada…");
+        _sessionLog.WriteMessage("Cancelación solicitada…", LogTone.Warning);
     }
 
-    private async Task RunBusyAsync(string status, Func<CancellationToken, Task> work) {
+    private void WebsiteLink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
+        Process.Start(new ProcessStartInfo {
+            FileName = e.Uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+        e.Handled = true;
+    }
+
+    private async Task RunBusyAsync(
+        string status,
+        Func<CancellationToken, Task> work,
+        bool trackFlashActivity = false,
+        long flashTotalBytes = 0) {
         if (_busy) return;
         _busy = true;
         _operationCts = new CancellationTokenSource();
         SetUiEnabled(false);
-        CancelFlashButton.IsEnabled = true;
-        StatusText.Text = status;
+        StopButton.IsEnabled = true;
+        if (trackFlashActivity) {
+            BeginFlashMetrics(flashTotalBytes);
+            SetFlashActivity(status);
+        }
         FlashProgress.Value = 0;
         FlashPartitionProgress.Value = 0;
         try {
             await work(_operationCts.Token);
-            StatusText.Text = "Listo";
         } catch (OperationCanceledException) {
             _sessionLog.WriteMessage("Operación cancelada.", LogTone.Warning);
-            StatusText.Text = "Cancelado";
         } catch (Exception ex) {
             _sessionLog.WriteMessage(ex.Message, LogTone.Error);
             if (ex.Message.Contains("Auth", StringComparison.OrdinalIgnoreCase)
@@ -732,12 +747,15 @@ public partial class MainWindow : Window {
                     "Desconecta, reinicia modo Download y vuelve a conectar (sesión USB caducada).",
                     LogTone.Error);
             Log.Debug(ex, "Operation");
-            StatusText.Text = "Error";
         } finally {
+            if (trackFlashActivity) {
+                SetFlashActivity(null);
+                _flashStartedUtc = null;
+            }
             _operationCts?.Dispose();
             _operationCts = null;
             _busy = false;
-            CancelFlashButton.IsEnabled = false;
+            StopButton.IsEnabled = false;
             SetUiEnabled(true);
             UpdateConnectionUi();
             FlashProgress.Value = 0;
@@ -746,7 +764,10 @@ public partial class MainWindow : Window {
     }
 
     private void UpdateConnectionUi() {
-        if (_session == null) return;
+        if (_session == null) {
+            UpdateConnectionStatus();
+            return;
+        }
         var usb = _session.IsUsbConnected;
         var odin = _session.IsOdinActive;
         var pitReady = _session.DevicePit != null;
@@ -784,13 +805,40 @@ public partial class MainWindow : Window {
             ErasePartitionCombo.IsEnabled = false;
         }
 
-        StatusText.Text = odin ? "Sesión Odin activa" : usb ? "USB conectado — inicia Odin" : "Desconectado";
+        UpdateConnectionStatus();
         UpdateReadyIndicator();
+    }
+
+    private void UpdateConnectionStatus() {
+        if (_session == null || (!_session.IsUsbConnected && !_session.IsOdinActive)) {
+            StatusText.Text = "Desconectado";
+            StatusText.Foreground = (Brush)FindResource("TfStatusDisconnectedBrush");
+            return;
+        }
+
+        if (_session.IsOdinActive && _session.DevicePit != null) {
+            StatusText.Text = "Ready";
+            StatusText.Foreground = (Brush)FindResource("TfStatusConnectedBrush");
+            return;
+        }
+
+        StatusText.Text = "Conectado";
+        StatusText.Foreground = (Brush)FindResource("TfReadyWaitingBrush");
+    }
+
+    private void SetFlashActivity(string? text) {
+        FlashStatusText.Text = text ?? "";
+        FlashStatusText.Visibility = string.IsNullOrWhiteSpace(text)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
     }
 
     private void SetUiEnabled(bool _) => UpdateConnectionUi();
 
     private void UpdateFlashProgress(FlashProgressReport r) {
+        if (r.TotalBytes > 0)
+            _flashTotalBytes = r.TotalBytes;
+
         if (r.TotalBytes > 0)
             FlashProgress.Value = Math.Clamp(r.SentBytes * 100.0 / r.TotalBytes, 0, 100);
         if (r.PartitionTotalBytes > 0)
@@ -798,6 +846,61 @@ public partial class MainWindow : Window {
                 r.PartitionSentBytes * 100.0 / r.PartitionTotalBytes, 0, 100);
         else
             FlashPartitionProgress.Value = 0;
+
+        if (_flashStartedUtc != null)
+            UpdateFlashStats(r.SentBytes, _flashTotalBytes > 0 ? _flashTotalBytes : r.TotalBytes);
+    }
+
+    private void BeginFlashMetrics(long totalBytes) {
+        _flashStartedUtc = DateTime.UtcNow;
+        _flashTotalBytes = totalBytes;
+        FlashStatsPanel.Visibility = Visibility.Visible;
+        UpdateFlashStats(0, totalBytes);
+    }
+
+    private void WriteFlashCompletedSummary() {
+        if (_flashStartedUtc == null) {
+            _sessionLog.WriteSuccess();
+            return;
+        }
+
+        var elapsed = DateTime.UtcNow - _flashStartedUtc.Value;
+        if (_flashTotalBytes > 0)
+            UpdateFlashStats(_flashTotalBytes, _flashTotalBytes);
+        _sessionLog.WriteFlashCompleted(elapsed);
+        _sessionLog.WriteSuccess();
+        _flashStartedUtc = null;
+    }
+
+    private void UpdateFlashStats(long writtenBytes, long totalBytes) {
+        TotalSizeText.Text = $"Total Size : {FormatFlashSize(totalBytes)}";
+        WrittenSizeText.Text = $"Written Size : {FormatFlashSize(writtenBytes)}";
+
+        if (_flashStartedUtc == null) {
+            TransferRateText.Text = "Transfer Rate : 0 KB/s";
+            return;
+        }
+
+        var elapsedSeconds = (DateTime.UtcNow - _flashStartedUtc.Value).TotalSeconds;
+        var rate = elapsedSeconds > 0.3 ? writtenBytes / elapsedSeconds : 0;
+        TransferRateText.Text = $"Transfer Rate : {FormatTransferRate(rate)}";
+    }
+
+    private static string FormatFlashSize(long bytes) {
+        if (bytes <= 0)
+            return "0 MB";
+
+        var mb = bytes / (1024.0 * 1024.0);
+        if (mb >= 1.0)
+            return mb.ToString("N0", CultureInfo.CurrentCulture) + " MB";
+
+        var kb = bytes / 1024.0;
+        return kb.ToString("N3", CultureInfo.CurrentCulture) + " KB";
+    }
+
+    private static string FormatTransferRate(double bytesPerSecond) {
+        var kb = bytesPerSecond / 1024.0;
+        return kb.ToString("N3", CultureInfo.CurrentCulture) + " KB/s";
     }
 
     private void AppendLog(string line) =>

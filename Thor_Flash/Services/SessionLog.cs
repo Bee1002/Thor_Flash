@@ -56,6 +56,14 @@ public sealed class SessionLog(ColoredLogWriter log) {
             WriteLabelValue("Model Number", pit.Project);
     }
 
+    public void WriteFlashCompleted(TimeSpan elapsed) =>
+        log.WriteLine(
+            $"All Tasks Is Completed - Elapsed Time : {FormatElapsed(elapsed)}",
+            LogTone.Warning);
+
     public void WriteSuccess(string message = " Good Job Boy 👍") =>
         log.WriteLine(message, LogTone.Success);
+
+    private static string FormatElapsed(TimeSpan elapsed) =>
+        $"{(int)elapsed.TotalMinutes:D2}m: {elapsed.Seconds:D2}s";
 }

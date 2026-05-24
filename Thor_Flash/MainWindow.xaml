@@ -7,17 +7,22 @@
         Title="Thor_Flash — Flasheo Odin Samsung"
         Icon="Assets/ThorFlash_icon.png"
         Height="700" Width="980"
-        MinHeight="520" MinWidth="820">
-    <Grid Margin="12">
+        MinHeight="520" MinWidth="820"
+        Background="{StaticResource TfWindowBgBrush}">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="180"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0" x:Name="MainTabs">
+        <TabControl Grid.Row="0" x:Name="MainTabs" Padding="0,2,0,0">
             <TabItem Header="Dispositivo">
-                <StackPanel Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <StackPanel>
                     <TextBlock Style="{StaticResource TfHintText}" Margin="0,0,0,12"
                                Text="Detección automática en Download (WinUSB/Zadig). El indicador verde confirma sesión Odin y PIT listos."/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -39,19 +44,21 @@
                         <Button x:Name="EndOdinButton" Content="Fin sesión" Width="90" Margin="0,0,8,0" Click="EndOdinButton_Click" IsEnabled="False"/>
                         <Button x:Name="DisconnectButton" Content="Desconectar" Width="95" Click="DisconnectButton_Click" IsEnabled="False"/>
                     </StackPanel>
-                    <TextBlock x:Name="OdinInfoText" TextWrapping="Wrap" Foreground="{StaticResource TfTextBrush}"/>
+                    <TextBlock x:Name="OdinInfoText" TextWrapping="Wrap" Foreground="{StaticResource TfTextMutedBrush}"/>
                 </StackPanel>
+                </Border>
             </TabItem>
 
             <TabItem Header="Flash firmware" x:Name="FlashTab" IsEnabled="False">
-                <Grid Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Style="{StaticResource TfHintText}" Margin="0,0,0,6"
@@ -73,9 +80,7 @@
                                   Checked="OdinOptionChanged" Unchecked="OdinOptionChanged"
                                   ToolTip="Reinicia por protocolo al terminar el flash. No uses los botones físicos en Download."/>
                     </StackPanel>
-                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,8"
-                                  Background="{StaticResource TfSurfaceBrush}"
-                                  BorderBrush="{StaticResource TfBorderBrush}" BorderThickness="1">
+                    <ScrollViewer Grid.Row="3" Style="{StaticResource TfPanelScrollViewer}" Margin="0,0,0,8">
                         <ItemsControl x:Name="PartitionsList" Margin="4">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -92,7 +97,7 @@
                                                           IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                           VerticalAlignment="Center" Margin="0,0,10,0"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding DisplayLabel}"
-                                                           FontWeight="SemiBold" Foreground="{StaticResource TfTextBrush}"
+                                                           Style="{StaticResource TfSlotLabel}"
                                                            VerticalAlignment="Center" MinWidth="48"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding SelectionSummary}"
                                                            Style="{StaticResource TfHintText}"
@@ -119,23 +124,19 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <StackPanel Grid.Row="4" Margin="0,0,0,8">
-                        <TextBlock Text="Imagen actual (similar al teléfono por partición)" FontSize="11" Style="{StaticResource TfHintText}"/>
-                        <ProgressBar x:Name="FlashPartitionProgress" Height="18" Minimum="0" Maximum="100" Margin="0,2,0,6"/>
-                        <TextBlock Text="Lote completo BL → AP → CP → CSC" FontSize="11" Style="{StaticResource TfHintText}"/>
-                        <ProgressBar x:Name="FlashProgress" Height="22" Minimum="0" Maximum="100"/>
-                    </StackPanel>
-                    <StackPanel Grid.Row="5" Orientation="Horizontal">
-                        <Button x:Name="FlashTarButton" Content="Flashear selección" Width="140" Margin="0,0,8,0"
+                    <StackPanel Grid.Row="4" Orientation="Horizontal">
+                        <Button x:Name="FlashTarButton" Content="Flashear selección" Width="140"
                                 Style="{StaticResource TfPrimaryButton}" Click="FlashTarButton_Click"/>
-                        <Button x:Name="CancelFlashButton" Content="Cancelar" Width="90" IsEnabled="False" Click="CancelFlashButton_Click"/>
-                        <TextBlock x:Name="FlashStatusText" VerticalAlignment="Center" Margin="12,0,0,0" Style="{StaticResource TfHintText}"/>
                     </StackPanel>
                 </Grid>
+                </Border>
             </TabItem>
 
             <TabItem Header="Archivo suelto" x:Name="SingleFileTab" IsEnabled="False">
-                <StackPanel Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBox x:Name="SingleFileBox" Width="480" Margin="0,0,8,0"/>
                         <Button Content="Archivo…" Width="80" Margin="0,0,8,0" Click="BrowseSingleFile_Click"/>
@@ -147,10 +148,14 @@
                     <TextBlock Style="{StaticResource TfHintText}" MaxWidth="520"
                                Text="Si el nombre del archivo coincide con el PIT, se elige la partición automáticamente."/>
                 </StackPanel>
+                </Border>
             </TabItem>
 
             <TabItem Header="PIT" x:Name="PitTab" IsEnabled="False">
-                <Grid Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -166,10 +171,14 @@
                              VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"
                              Style="{StaticResource TfLogTextBox}"/>
                 </Grid>
+                </Border>
             </TabItem>
 
             <TabItem Header="Avanzado" x:Name="AdvancedTab" IsEnabled="False">
-                <StackPanel Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <StackPanel>
                     <TextBlock Style="{StaticResource TfHintText}" Margin="0,0,0,10"
                                Text="Comandos avanzados: borrar partición, código de región y opciones extra de protocolo."/>
                     <TextBlock Text="Código de región (setRegion, 3 letras)" Style="{StaticResource TfSectionTitle}" Margin="0,0,0,4"/>
@@ -184,22 +193,74 @@
                         <Button x:Name="ErasePartitionButton" Content="Borrar partición" Width="130" Click="ErasePartitionButton_Click"/>
                     </StackPanel>
                 </StackPanel>
+                </Border>
             </TabItem>
 
             <TabItem Header="Reinicio" x:Name="RebootTab" IsEnabled="False">
-                <StackPanel Margin="8">
+                <Border Background="{StaticResource TfGlassSurfaceBrush}"
+                        BorderBrush="{StaticResource TfGlassBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
+                <StackPanel>
                     <Button Content="Reiniciar dispositivo" Width="160" Margin="0,0,0,8" HorizontalAlignment="Left" Click="RebootButton_Click"/>
                     <Button Content="Reiniciar a modo Download" Width="200" Margin="0,0,0,8" HorizontalAlignment="Left" Click="RebootOdinButton_Click"/>
                     <TextBlock Style="{StaticResource TfHintText}"
                                Text="Usa estos botones o «Reinicio automático» tras flashear. No reinicies con botones físicos en Download: puede aparecer la pantalla azul «An error has occurred while updating the device software»."/>
                 </StackPanel>
+                </Border>
             </TabItem>
         </TabControl>
 
-        <RichTextBox Grid.Row="1" x:Name="LogBox"
-                     Style="{StaticResource TfLogRichTextBox}"
-                     Margin="0,8,0,0"/>
+        <Border Grid.Row="1" Margin="0,8,0,0"
+                Background="{StaticResource TfLogBgBrush}"
+                BorderBrush="{StaticResource TfGlassBorderBrush}"
+                BorderThickness="1" CornerRadius="2" Opacity="0.96">
+            <RichTextBox x:Name="LogBox"
+                         Style="{StaticResource TfLogRichTextBox}"
+                         BorderThickness="0" Background="Transparent"/>
+        </Border>
 
-        <TextBlock Grid.Row="2" x:Name="StatusText" Margin="0,8,0,0" Style="{StaticResource TfStatusBar}"/>
+        <StackPanel Grid.Row="2" Margin="0,8,0,6">
+            <ProgressBar x:Name="FlashPartitionProgress" Style="{StaticResource TfProgressPartitionBar}"
+                         Minimum="0" Maximum="100"/>
+            <ProgressBar x:Name="FlashProgress" Style="{StaticResource TfProgressBatchBar}"
+                         Minimum="0" Maximum="100" Margin="0,3,0,0"/>
+            <Grid x:Name="FlashStatsPanel" Margin="0,5,0,0" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="TotalSizeText" Style="{StaticResource TfFlashStatsText}"
+                           Text="Total Size : 0 MB"/>
+                <TextBlock Grid.Column="1" x:Name="WrittenSizeText" Style="{StaticResource TfFlashStatsText}"
+                           HorizontalAlignment="Center" Text="Written Size : 0 MB"/>
+                <TextBlock Grid.Column="2" x:Name="TransferRateText" Style="{StaticResource TfFlashStatsText}"
+                           HorizontalAlignment="Right" Text="Transfer Rate : 0 KB/s"/>
+            </Grid>
+        </StackPanel>
+
+        <Grid Grid.Row="3" Margin="0,2,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" x:Name="StatusText" MinWidth="88"
+                       Style="{StaticResource TfStatusBar}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" x:Name="FlashStatusText" Margin="12,0,12,0"
+                       Style="{StaticResource TfFlashActivityText}"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                       Visibility="Collapsed"/>
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12" Margin="0,0,12,0">
+                <Hyperlink NavigateUri="https://phone-parts.pages.dev/dashboard"
+                           RequestNavigate="WebsiteLink_RequestNavigate"
+                           Style="{StaticResource TfWebsiteLink}">
+                    Phone Parts
+                </Hyperlink>
+            </TextBlock>
+            <Button Grid.Column="3" x:Name="StopButton" Style="{StaticResource TfStopButton}"
+                    IsEnabled="False" Click="StopButton_Click"/>
+        </Grid>
     </Grid>
 </Window>
