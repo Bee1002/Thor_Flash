@@ -18,7 +18,7 @@ public partial class MainWindow : Window {
     private readonly DispatcherTimer? _refreshTimer;
     private readonly SessionLog _sessionLog;
     private readonly ColoredLogWriter _coloredLog;
-    private readonly ObservableCollection<FlashPartitionItem> _partitionItems = [];
+    private readonly ObservableCollection<FlashSlotGroup> _slotGroups = [];
     private CancellationTokenSource? _operationCts;
     private bool _busy;
     private bool _autoPipelineBusy;
@@ -42,7 +42,7 @@ public partial class MainWindow : Window {
             .MinimumLevel.Debug()
             .CreateLogger();
 
-        PartitionsGrid.ItemsSource = _partitionItems;
+        PartitionsList.ItemsSource = _slotGroups;
 
         try {
             if (!OdinSession.IsPlatformSupported) {
@@ -306,7 +306,7 @@ public partial class MainWindow : Window {
             _manualEndOdin = false;
             _session.DisconnectUsb();
             OdinInfoText.Text = "";
-            _partitionItems.Clear();
+            _slotGroups.Clear();
             AppendLog("Desconectado. Reinicia el teléfono en Download para reconectar.");
             UpdateConnectionUi();
             UpdateReadyIndicator();
@@ -412,10 +412,9 @@ public partial class MainWindow : Window {
             var pit = await EnsureDevicePitAsync(ct);
             var scan = await Task.Run(() => OdinOperations.ScanFirmwareSource(source, pit), ct);
             await Dispatcher.InvokeAsync(() => {
-                _partitionItems.Clear();
-                foreach (var item in scan.Matches)
-                    _partitionItems.Add(item);
-                PartitionsGrid.Items.Refresh();
+                _slotGroups.Clear();
+                foreach (var group in FlashSlotGroup.CreateFromMatches(scan.Matches))
+                    _slotGroups.Add(group);
             });
 
             if (scan.Matches.Count == 0)
@@ -424,26 +423,32 @@ public partial class MainWindow : Window {
     }
 
     private void SelectAllPartitions_Click(object sender, RoutedEventArgs e) {
-        foreach (var item in _partitionItems)
-            item.Selected = true;
+        foreach (var group in _slotGroups)
+            group.Selected = true;
     }
 
     private void SelectNoPartitions_Click(object sender, RoutedEventArgs e) {
-        foreach (var item in _partitionItems)
-            item.Selected = false;
+        foreach (var group in _slotGroups)
+            group.Selected = false;
     }
+
+    private IEnumerable<FlashPartitionItem> AllPartitionItems =>
+        _slotGroups.SelectMany(g => g.Partitions);
 
     private async void FlashTarButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null || !_session.IsOdinActive) return;
-        var selected = _partitionItems.Where(x => x.Selected).ToList();
+        var selected = AllPartitionItems.Where(x => x.Selected).ToList();
         if (selected.Count == 0) {
             _sessionLog.WriteMessage("Marca al menos una partición.", LogTone.Warning);
             return;
         }
 
-        var msg = $"¿Flashear {selected.Count} imagen(es)?\n\n" +
-                  string.Join("\n", selected.Take(8).Select(x => $"• {x.DisplayLabel}")) +
-                  (selected.Count > 8 ? $"\n… y {selected.Count - 8} más" : "");
+        var summary = string.Join("\n",
+            _slotGroups
+                .Select(g => (g, count: g.Partitions.Count(x => x.Selected)))
+                .Where(x => x.count > 0)
+                .Select(x => $"• {x.g.DisplayLabel}: {x.count} imagen(es)"));
+        var msg = $"¿Flashear {selected.Count} imagen(es)?\n\n{summary}";
         if (MessageBox.Show(msg, "Confirmar flash", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
@@ -760,7 +765,7 @@ public partial class MainWindow : Window {
         AdvancedTab.IsEnabled = odin;
         RebootTab.IsEnabled = odin;
         ScanTarButton.IsEnabled = odin && pitReady && !_busy;
-        FlashTarButton.IsEnabled = odin && pitReady && !_busy && _partitionItems.Count > 0;
+        FlashTarButton.IsEnabled = odin && pitReady && !_busy && AllPartitionItems.Any();
         FlashFileButton.IsEnabled = odin && !_busy;
         DumpPitButton.IsEnabled = odin && !_busy;
         PrintPitDeviceButton.IsEnabled = odin && !_busy;
