@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Thor_Flash — Flasheo Odin Samsung"
+        Title="Thor_Flash — Samsung Odin Flashing"
         Icon="Assets/ThorFlash_icon.png"
         Height="700" Width="980"
         MinHeight="520" MinWidth="820"
+        WindowStartupLocation="CenterScreen"
         Background="{StaticResource TfWindowBgBrush}">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -24,12 +25,12 @@
             <StackPanel>
                 <TextBlock x:Name="OdinInfoText" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                            VerticalAlignment="Center" Foreground="{StaticResource TfTextMutedBrush}"/>
-                <Expander x:Name="ConnectionExpander" Header="Opciones de conexión" Margin="0,8,0,0"
+                <Expander x:Name="ConnectionExpander" Header="Connection options" Margin="0,8,0,0"
                           IsExpanded="False" Foreground="{StaticResource TfTextMutedBrush}">
                     <StackPanel Margin="0,6,0,0">
                         <StackPanel x:Name="DevicePickerPanel" Orientation="Horizontal" Margin="0,0,0,8"
                                     Visibility="Collapsed">
-                            <TextBlock Text="Dispositivo:" VerticalAlignment="Center" Margin="0,0,8,0"
+                            <TextBlock Text="Device:" VerticalAlignment="Center" Margin="0,0,8,0"
                                        Style="{StaticResource TfHintText}"/>
                             <ComboBox x:Name="DeviceCombo" Width="360" Margin="0,0,8,0"
                                       DisplayMemberPath="DisplayName" IsEnabled="False"/>
@@ -40,19 +41,19 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Button x:Name="RefreshButton" Content="Actualizar" Width="90" Margin="0,0,8,0"
+                                <Button x:Name="RefreshButton" Content="Refresh" Width="90" Margin="0,0,8,0"
                                         Click="RefreshButton_Click"/>
-                                <Button x:Name="ConnectButton" Content="Conectar USB" Width="110" Margin="0,0,8,0"
+                                <Button x:Name="ConnectButton" Content="Connect USB" Width="110" Margin="0,0,8,0"
                                         Style="{StaticResource TfPrimaryButton}" Click="ConnectButton_Click"/>
-                                <Button x:Name="BeginOdinButton" Content="Iniciar Odin" Width="100" Margin="0,0,8,0"
+                                <Button x:Name="BeginOdinButton" Content="Begin Odin" Width="100" Margin="0,0,8,0"
                                         Style="{StaticResource TfPrimaryButton}" Click="BeginOdinButton_Click" IsEnabled="False"/>
-                                <Button x:Name="EndOdinButton" Content="Fin sesión" Width="90" Margin="0,0,8,0"
+                                <Button x:Name="EndOdinButton" Content="End session" Width="90" Margin="0,0,8,0"
                                         Click="EndOdinButton_Click" IsEnabled="False"/>
-                                <Button x:Name="DisconnectButton" Content="Desconectar" Width="95"
+                                <Button x:Name="DisconnectButton" Content="Disconnect" Width="95"
                                         Click="DisconnectButton_Click" IsEnabled="False"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button x:Name="DriverHelpButton" Content="Guía WinUSB" Width="95" Margin="0,0,8,0"
+                                <Button x:Name="DriverHelpButton" Content="Guía WinUSB" Width="105" Margin="0,0,8,0"
                                         Click="DriverHelpButton_Click"/>
                                 <Button x:Name="DiagnoseButton" Content="Diagnóstico" Width="95"
                                         Click="DiagnoseButton_Click"/>
@@ -80,23 +81,23 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Style="{StaticResource TfHintText}" Margin="0,0,0,6"
-                                   Text="Carpeta o un solo .tar/.tar.md5 de Odin. Escanear cruza nombres del archivo con el PIT del teléfono."/>
+                                   Text="Folder or a single Odin .tar/.tar.md5. Scan matches file names against the device PIT."/>
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBox x:Name="TarFolderBox" Width="400" Margin="0,0,8,0"
-                                     ToolTip="Carpeta con AP/BL/CP/CSC .tar.md5, o ruta a un único .tar"/>
-                            <Button Content="Carpeta…" Width="72" Margin="0,0,4,0" Click="BrowseTarFolder_Click"/>
+                                     ToolTip="Folder with AP/BL/CP/CSC .tar.md5, or path to a single .tar"/>
+                            <Button Content="Folder…" Width="72" Margin="0,0,4,0" Click="BrowseTarFolder_Click"/>
                             <Button Content=".tar…" Width="52" Margin="0,0,8,0" Click="BrowseTarFile_Click"/>
-                            <Button x:Name="ScanTarButton" Content="Escanear" Width="88" Margin="0,0,8,0" Click="ScanTarButton_Click"/>
-                            <Button Content="Todo" Width="50" Margin="0,0,4,0" Click="SelectAllPartitions_Click"/>
-                            <Button Content="Nada" Width="50" Click="SelectNoPartitions_Click"/>
+                            <Button x:Name="ScanTarButton" Content="Scan" Width="88" Margin="0,0,8,0" Click="ScanTarButton_Click"/>
+                            <Button Content="All" Width="50" Margin="0,0,4,0" Click="SelectAllPartitions_Click"/>
+                            <Button Content="None" Width="50" Click="SelectNoPartitions_Click"/>
                         </StackPanel>
                         <StackPanel Grid.Row="2" x:Name="FlashOptionsPanel" Orientation="Horizontal" Margin="0,0,0,8">
                             <CheckBox x:Name="EfsClearCheck" Content="EFS Clear" Margin="0,0,16,0"
                                       Checked="OdinOptionChanged" Unchecked="OdinOptionChanged"
-                                      ToolTip="Borra partición EFS al flashear (opción Odin «EFS Clear»)."/>
-                            <CheckBox x:Name="AutoRebootCheck" Content="Reinicio automático" IsChecked="True"
+                                      ToolTip="Erases EFS partition when flashing (Odin «EFS Clear» option)."/>
+                            <CheckBox x:Name="AutoRebootCheck" Content="Auto reboot" IsChecked="True"
                                       Checked="OdinOptionChanged" Unchecked="OdinOptionChanged"
-                                      ToolTip="Reinicia por protocolo al terminar el flash. No uses los botones físicos en Download."/>
+                                      ToolTip="Reboots by protocol when flash completes. Do not use physical buttons in Download mode."/>
                         </StackPanel>
                         <ScrollViewer Grid.Row="3" x:Name="FlashPartitionsPanel" Style="{StaticResource TfPanelScrollViewer}" Margin="0,0,0,8">
                             <ItemsControl x:Name="PartitionsList" Margin="4">
@@ -143,7 +144,7 @@
                             </ItemsControl>
                         </ScrollViewer>
                         <StackPanel Grid.Row="4" Orientation="Horizontal">
-                            <Button x:Name="FlashTarButton" Content="Flashear selección" Width="140"
+                            <Button x:Name="FlashTarButton" Content="Flash selection" Width="140"
                                     Style="{StaticResource TfPrimaryButton}" Click="FlashTarButton_Click"/>
                         </StackPanel>
                     </Grid>
@@ -161,16 +162,16 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                            <Button x:Name="DumpPitButton" Content="Volcar PIT del dispositivo" Width="180" Margin="0,0,8,0" Click="DumpPitButton_Click"/>
-                            <Button x:Name="PrintPitDeviceButton" Content="Ver PIT (dispositivo)" Width="150" Margin="0,0,8,0" Click="PrintPitDeviceButton_Click"/>
-                            <Button Content="Ver PIT (archivo)…" Width="130" Margin="0,0,8,0" Click="PrintPitFileButton_Click"/>
-                            <Button x:Name="FlashPitButton" Content="Flashear PIT…" Width="110" Click="FlashPitButton_Click"/>
+                            <Button x:Name="DumpPitButton" Content="Dump device PIT" Width="130" Margin="0,0,8,0" Click="DumpPitButton_Click"/>
+                            <Button x:Name="PrintPitDeviceButton" Content="View PIT (device)" Width="130" Margin="0,0,8,0" Click="PrintPitDeviceButton_Click"/>
+                            <Button Content="View PIT (file)…" Width="120" Margin="0,0,8,0" Click="PrintPitFileButton_Click"/>
+                            <Button x:Name="FlashPitButton" Content="Flash PIT…" Width="100" Click="FlashPitButton_Click"/>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-                            <CheckBox x:Name="PitShowAllCheck" Content="Ver todas las particiones"
+                            <CheckBox x:Name="PitShowAllCheck" Content="Show all partitions"
                                       VerticalAlignment="Center" Margin="0,0,16,0"
                                       Checked="PitViewOption_Changed" Unchecked="PitViewOption_Changed"/>
-                            <CheckBox x:Name="PitShowAdvancedCheck" Content="Detalle avanzado"
+                            <CheckBox x:Name="PitShowAdvancedCheck" Content="Advanced details"
                                       VerticalAlignment="Center"
                                       Checked="PitViewOption_Changed" Unchecked="PitViewOption_Changed"/>
                         </StackPanel>
@@ -181,53 +182,78 @@
                     </Border>
                 </TabItem>
 
-                <TabItem Header="Reinicio" x:Name="RebootTab">
+                <TabItem Header="Reboot" x:Name="RebootTab">
                     <Border Background="{StaticResource TfGlassSurfaceBrush}"
                             BorderBrush="{StaticResource TfGlassBorderBrush}"
                             BorderThickness="1" CornerRadius="2" Padding="10" Margin="0,4,0,0" Opacity="0.97">
                     <StackPanel>
                         <TextBlock Style="{StaticResource TfHintText}" Margin="0,0,0,8"
-                                   Text="Reinicia el dispositivo por protocolo Odin. Tras un flash, «Reinicio automático» en Flash suele ser suficiente."/>
-                        <Button x:Name="RebootDeviceButton" Content="Reiniciar dispositivo" Width="160" Margin="0,0,0,8"
+                                   Text="Reboot the device by Odin protocol. After a flash, Auto reboot on the Flash tab is usually enough."/>
+                        <Button x:Name="RebootDeviceButton" Content="Reboot device" Width="140" Margin="0,0,0,8"
                                 HorizontalAlignment="Left" Click="RebootButton_Click"/>
                     </StackPanel>
                     </Border>
                 </TabItem>
             </TabControl>
 
-            <!-- FASE FLASH: log a pantalla completa -->
+            <!-- FASE FLASH: log a pantalla completa (glass estilo Odin_Flash) -->
             <Grid x:Name="FlashPhasePanel" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Border Grid.Row="0"
-                        Background="{StaticResource TfLogBgBrush}"
-                        BorderBrush="{StaticResource TfGlassBorderBrush}"
-                        BorderThickness="1" CornerRadius="2" Opacity="0.96">
-                    <RichTextBox x:Name="LogBox"
-                                 Style="{StaticResource TfLogRichTextBox}"
-                                 BorderThickness="0" Background="Transparent"/>
-                </Border>
-                <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                    <ProgressBar x:Name="FlashPartitionProgress" Style="{StaticResource TfProgressPartitionBar}"
-                                 Minimum="0" Maximum="100"/>
-                    <ProgressBar x:Name="FlashProgress" Style="{StaticResource TfProgressBatchBar}"
-                                 Minimum="0" Maximum="100" Margin="0,3,0,0"/>
-                    <Grid x:Name="FlashStatsPanel" Margin="0,5,0,0" Visibility="Collapsed">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="TotalSizeText" Style="{StaticResource TfFlashStatsText}"
-                                   Text="Total Size : 0 MB"/>
-                        <TextBlock Grid.Column="1" x:Name="WrittenSizeText" Style="{StaticResource TfFlashStatsText}"
-                                   HorizontalAlignment="Center" Text="Written Size : 0 MB"/>
-                        <TextBlock Grid.Column="2" x:Name="TransferRateText" Style="{StaticResource TfFlashStatsText}"
-                                   HorizontalAlignment="Right" Text="Transfer Rate : 0 KB/s"/>
-                    </Grid>
-                </StackPanel>
+                <Border Background="{StaticResource TfFlashPhaseBackdropBrush}"
+                        CornerRadius="8" Margin="0,2,0,0"/>
+                <Grid Margin="0,2,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"
+                            Style="{StaticResource TfFlashLogPanelOuter}">
+                        <Border Style="{StaticResource TfFlashLogPanelBorder}"
+                                Padding="12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="FLASH LOG"
+                                           Style="{StaticResource TfFlashLogHeader}"
+                                           Margin="0,0,0,10"/>
+                                <RichTextBox Grid.Row="1"
+                                             x:Name="LogBox"
+                                             Style="{StaticResource TfFlashLogRichTextBox}">
+                                    <FlowDocument Background="Transparent"
+                                                  PagePadding="0"
+                                                  PageWidth="1000"/>
+                                </RichTextBox>
+                            </Grid>
+                        </Border>
+                    </Border>
+                    <Border Grid.Row="1"
+                            Margin="0,8,0,0"
+                            Style="{StaticResource TfFlashLogFooterPanel}">
+                        <Border Style="{StaticResource TfFlashLogFooterInner}">
+                            <StackPanel>
+                            <ProgressBar x:Name="FlashPartitionProgress" Style="{StaticResource TfProgressPartitionBar}"
+                                         Minimum="0" Maximum="100"/>
+                            <ProgressBar x:Name="FlashProgress" Style="{StaticResource TfProgressBatchBar}"
+                                         Minimum="0" Maximum="100" Margin="0,3,0,0"/>
+                            <Grid x:Name="FlashStatsPanel" Margin="0,5,0,0" Visibility="Collapsed">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="TotalSizeText" Style="{StaticResource TfFlashStatsText}"
+                                           Text="Total Size : 0 MB"/>
+                                <TextBlock Grid.Column="1" x:Name="WrittenSizeText" Style="{StaticResource TfFlashStatsText}"
+                                           HorizontalAlignment="Center" Text="Written Size : 0 MB"/>
+                                <TextBlock Grid.Column="2" x:Name="TransferRateText" Style="{StaticResource TfFlashStatsText}"
+                                           HorizontalAlignment="Right" Text="Transfer Rate : 0 KB/s"/>
+                            </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
 
@@ -253,7 +279,7 @@
                     Phone Parts
                 </Hyperlink>
             </TextBlock>
-            <Button Grid.Column="3" x:Name="NewFlashButton" Content="Nuevo flash" Width="100" Margin="0,0,8,0"
+            <Button Grid.Column="3" x:Name="NewFlashButton" Content="New flash" Width="100" Margin="0,0,8,0"
                     Visibility="Collapsed" Click="NewFlashButton_Click"/>
             <Button Grid.Column="4" x:Name="StopButton" Style="{StaticResource TfStopButton}"
                     IsEnabled="False" Click="StopButton_Click"/>

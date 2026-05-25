@@ -26,19 +26,6 @@ public sealed class WindowsUsbHandler : IHandler, IDisposable {
     private readonly List<OdinUsbInterface> _odinInterfaces = [];
     private int _activeInterfaceIndex;
 
-    public string GetNotes() {
-        var baseNotes =
-            "Windows (LibUsbDotNet):\n" +
-            "1) Teléfono SOLO en modo Download/Odin (pantalla azul/verde con advertencia).\n" +
-            "2) Cierra Samsung Odin, Smart Switch y cualquier herramienta que use el puerto.\n" +
-            "3) Si 'Conectar' falla: Administrador de dispositivos o Zadig → interfaz bulk/CDC → WinUSB.\n" +
-            "4) En Zadig elige la interfaz con clase 0x0A (CDC Data), NO el módem 0x02.\n" +
-            "5) Tras cambiar driver, desenchufa/reenchufa el cable y reinicia modo Download.";
-        if (_initError != null)
-            return baseNotes + "\n\nERROR libusb: " + _initError;
-        return baseNotes;
-    }
-
     public string Diagnose(string? deviceId = null) {
         EnsureUsbContext();
         var sb = new StringBuilder();

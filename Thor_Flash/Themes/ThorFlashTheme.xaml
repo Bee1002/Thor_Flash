@@ -2,11 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Paleta Odin Flash: fondo #263238 · acento #2E8276 · log #59B369 -->
-    <Color x:Key="TfBgColor">#1E272C</Color>
-    <Color x:Key="TfBgLightColor">#263238</Color>
     <Color x:Key="TfSurfaceColor">#2C3A40</Color>
-    <Color x:Key="TfSurfaceAltColor">#37474F</Color>
-    <Color x:Key="TfBorderColor">#455A64</Color>
     <Color x:Key="TfBorderStrongColor">#546E7A</Color>
     <Color x:Key="TfAccentMutedColor">#2E8276</Color>
     <Color x:Key="TfAccentBrightColor">#3D9688</Color>
@@ -18,9 +14,7 @@
     <Color x:Key="TfProgressTrackColor">#141A1E</Color>
     <Color x:Key="TfProgressFillColor">#59B369</Color>
     <Color x:Key="TfProgressFillDimColor">#478F55</Color>
-    <Color x:Key="TfReadyColor">#59B369</Color>
     <Color x:Key="TfReadyWaitingColor">#2E8276</Color>
-    <Color x:Key="TfReadyOffColor">#546E7A</Color>
     <Color x:Key="TfStatusConnectedColor">#59B369</Color>
     <Color x:Key="TfStatusDisconnectedColor">#E57373</Color>
     <Color x:Key="TfStopButtonColor">#8B4545</Color>
@@ -32,11 +26,7 @@
     <Color x:Key="TfGlassBorderColor">#66455A64</Color>
     <Color x:Key="TfTabSelectedColor">#552E8276</Color>
 
-    <SolidColorBrush x:Key="TfBgBrush" Color="{StaticResource TfBgColor}"/>
-    <SolidColorBrush x:Key="TfBgLightBrush" Color="{StaticResource TfBgLightColor}"/>
     <SolidColorBrush x:Key="TfSurfaceBrush" Color="{StaticResource TfSurfaceColor}"/>
-    <SolidColorBrush x:Key="TfSurfaceAltBrush" Color="{StaticResource TfSurfaceAltColor}"/>
-    <SolidColorBrush x:Key="TfBorderBrush" Color="{StaticResource TfBorderColor}"/>
     <SolidColorBrush x:Key="TfBorderStrongBrush" Color="{StaticResource TfBorderStrongColor}"/>
     <SolidColorBrush x:Key="TfAccentMutedBrush" Color="{StaticResource TfAccentMutedColor}"/>
     <SolidColorBrush x:Key="TfAccentBrightBrush" Color="{StaticResource TfAccentBrightColor}"/>
@@ -48,9 +38,7 @@
     <SolidColorBrush x:Key="TfProgressBrush" Color="{StaticResource TfProgressFillColor}"/>
     <SolidColorBrush x:Key="TfProgressDimBrush" Color="{StaticResource TfProgressFillDimColor}"/>
     <SolidColorBrush x:Key="TfProgressTrackBrush" Color="{StaticResource TfProgressTrackColor}"/>
-    <SolidColorBrush x:Key="TfReadyBrush" Color="{StaticResource TfReadyColor}"/>
     <SolidColorBrush x:Key="TfReadyWaitingBrush" Color="{StaticResource TfReadyWaitingColor}"/>
-    <SolidColorBrush x:Key="TfReadyOffBrush" Color="{StaticResource TfReadyOffColor}"/>
     <SolidColorBrush x:Key="TfStatusConnectedBrush" Color="{StaticResource TfStatusConnectedColor}"/>
     <SolidColorBrush x:Key="TfStatusDisconnectedBrush" Color="{StaticResource TfStatusDisconnectedColor}"/>
     <SolidColorBrush x:Key="TfStopButtonBrush" Color="{StaticResource TfStopButtonColor}"/>
@@ -372,30 +360,80 @@
         <Setter Property="Opacity" Value="0.96"/>
     </Style>
 
-    <Style TargetType="DataGrid">
-        <Setter Property="Background" Value="{StaticResource TfGlassSurfaceBrush}"/>
-        <Setter Property="Foreground" Value="{StaticResource TfTextBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource TfGlassBorderBrush}"/>
-        <Setter Property="RowBackground" Value="Transparent"/>
-        <Setter Property="AlternatingRowBackground" Value="#2237474F"/>
-        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource TfGlassBorderBrush}"/>
-        <Setter Property="HeadersVisibility" Value="Column"/>
-        <Setter Property="Opacity" Value="0.97"/>
+    <!-- Fase flash: panel log semitransparente (Odin_Flash / OdinPanelBorder, solo esta pantalla) -->
+    <Color x:Key="TfFlashLogPanelBgColor">#1A1A2328</Color>
+    <Color x:Key="TfFlashLogPanelBorderColor">#CC62C574</Color>
+    <Color x:Key="TfFlashLogPanelOuterColor">#6848B088</Color>
+    <Color x:Key="TfFlashLogFooterBgColor">#1A1E272C</Color>
+    <Color x:Key="TfFlashLogHeaderColor">#6FD07E</Color>
+    <SolidColorBrush x:Key="TfFlashLogPanelBgBrush" Color="{StaticResource TfFlashLogPanelBgColor}"/>
+    <SolidColorBrush x:Key="TfFlashLogPanelBorderBrush" Color="{StaticResource TfFlashLogPanelBorderColor}"/>
+    <SolidColorBrush x:Key="TfFlashLogPanelOuterBrush" Color="{StaticResource TfFlashLogPanelOuterColor}"/>
+    <SolidColorBrush x:Key="TfFlashLogFooterBgBrush" Color="{StaticResource TfFlashLogFooterBgColor}"/>
+    <SolidColorBrush x:Key="TfFlashLogHeaderBrush" Color="{StaticResource TfFlashLogHeaderColor}"/>
+
+    <LinearGradientBrush x:Key="TfFlashPhaseBackdropBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#752E8276" Offset="0"/>
+        <GradientStop Color="#442A3238" Offset="0.45"/>
+        <GradientStop Color="#6642A892" Offset="1"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="TfFlashLogPanelOuter" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource TfFlashLogPanelOuterBrush}"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
-    <Style TargetType="DataGridColumnHeader">
-        <Setter Property="Background" Value="#8837474F"/>
-        <Setter Property="Foreground" Value="{StaticResource TfTextMutedBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource TfGlassBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="0,0,0,1"/>
-        <Setter Property="Padding" Value="8,6"/>
+    <Style x:Key="TfFlashLogPanelBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource TfFlashLogPanelBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource TfFlashLogPanelBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
-    <Style TargetType="DataGridCell">
-        <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="Padding" Value="6,4"/>
-        <Setter Property="Foreground" Value="{StaticResource TfTextBrush}"/>
+    <Style x:Key="TfFlashLogFooterInner" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource TfFlashLogFooterBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource TfFlashLogPanelBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="10,8"/>
+    </Style>
+
+    <Style x:Key="TfFlashLogFooterPanel" TargetType="Border" BasedOn="{StaticResource TfFlashLogPanelOuter}">
+        <Setter Property="CornerRadius" Value="7"/>
+        <Setter Property="Padding" Value="1"/>
+    </Style>
+
+    <Style x:Key="TfFlashLogHeader" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{StaticResource TfFlashLogHeaderBrush}"/>
+    </Style>
+
+    <Style x:Key="TfFlashLogRichTextBox" TargetType="RichTextBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Courier New"/>
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RichTextBox">
+                    <Border Background="Transparent" BorderThickness="0">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Background="Transparent"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ── Textos auxiliares ── -->
@@ -403,11 +441,6 @@
         <Setter Property="Foreground" Value="{StaticResource TfTextSubtleBrush}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="Opacity" Value="0.92"/>
-    </Style>
-
-    <Style x:Key="TfSectionTitle" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource TfLogTextBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style x:Key="TfSlotLabel" TargetType="TextBlock">
@@ -445,7 +478,7 @@
     </Style>
 
     <Style x:Key="TfStopButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-        <Setter Property="Content" Value="Parar"/>
+        <Setter Property="Content" Value="Stop"/>
         <Setter Property="Width" Value="72"/>
         <Setter Property="Padding" Value="14,5"/>
         <Setter Property="Opacity" Value="0.4"/>

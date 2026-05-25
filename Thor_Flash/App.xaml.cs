@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Protocol.Thor.Library.Communication;
@@ -14,7 +14,7 @@ public partial class App : Application {
             args.Handled = true;
             MessageBox.Show(
                 args.Exception.Message,
-                "Error en Thor_Flash",
+                "Thor_Flash Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         };
@@ -31,7 +31,7 @@ public partial class App : Application {
             LogFatal(ex, "Startup");
             MessageBox.Show(
                 ex.Message + "\n\n" + ex.StackTrace,
-                "No se pudo iniciar Thor_Flash",
+                "Could not start Thor_Flash",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(1);

@@ -24,33 +24,33 @@ dotnet build Thor_Flash.sln -c Release
 
 Ejecutable: `Thor_Flash\bin\Release\net8.0-windows\Thor_Flash.exe`
 
-## Flujo de sesión
+## Flujo de sesión (WPF)
 
-1. `connect` → **Conectar USB**
-2. `begin` → **Iniciar Odin**
-3. Comandos Odin (tablas abajo)
-4. `end` → **Fin sesión**
-5. `disconnect` → **Desconectar** — tras flash o fin de sesión, **reinicia el teléfono en Download**
+1. Conectar el teléfono en Download → **conexión automática** (USB, Odin, lectura PIT) → **Ready**.
+2. **Flash firmware**: carpeta o `.tar` → Escanear → Flashear selección.
+3. Log a pantalla completa durante el flash; **Nuevo flash** vuelve a la selección.
+4. Opcional: **Opciones de conexión** (expandir arriba) para Conectar / Iniciar Odin / Desconectar manualmente.
 
-## Comandos → pantallas WPF
+Ver [Flashear firmware](docs/Flashear-firmware.md).
+
+## Comandos Thor CLI → pantallas WPF
 
 | Comando | En Thor_Flash |
 |---------|---------------|
-| `connect` | Dispositivo → Conectar USB |
-| `begin` | Iniciar Odin |
-| `end` | Fin sesión |
-| `disconnect` | Desconectar |
+| `connect` / `begin` | Automático al detectar Download; manual en **Opciones de conexión** |
+| `end` / `disconnect` | **Fin sesión** / **Desconectar** (Opciones de conexión) |
 | `flashTar` | Flash firmware → Escanear + Flashear selección |
-| `flashFile` | Archivo suelto |
 | `dumpPit` | PIT → Volcar PIT del dispositivo |
 | `printPit` | Ver PIT (dispositivo / archivo) |
 | `flashPit` | PIT → Flashear PIT desde archivo |
 | `factoryReset` | No disponible en la interfaz WPF |
 | `erasePartition` | No disponible en la interfaz WPF |
 | `setRegion` | No disponible en la interfaz WPF |
+| `flashFile` | No disponible en la interfaz WPF |
 | `options efsclear` | Flash firmware → casilla **EFS Clear** |
-| `options blupdate/resetfc` | Automático en el motor al flashear `.tar` (BL en lote → bootloader update; reset flash count al final) |
-| `reboot` / reinicio Odin | Reinicio (+ **Reinicio automático** tras flash) |
+| `options blupdate` | **Automático** al flashear `.tar` con BL |
+| `options resetfc` | **Automático** al final del lote de flash |
+| `reboot` | Reinicio (+ **Reinicio automático** tras flash) |
 | `write` / `read` raw USB | No disponible en la interfaz WPF |
 
 ## Estructura del repositorio
@@ -63,8 +63,7 @@ Thor_Flash.sln
 │   ├── Platform/                # WinUSB (LibUsbDotNet, ZLP, interfaces CDC 0x0A)
 │   ├── PIT/                     # Tabla de particiones
 │   ├── OdinOperations.cs        # Flash .tar, progreso, escaneo firmware
-│   ├── OdinSession.cs           # Sesión USB + Odin (API de alto nivel)
-│   └── SerialFlashOperations.cs # Reservado: flash por COM (no usado en Windows USB)
+│   └── OdinSession.cs           # Sesión USB + Odin (API de alto nivel)
 ├── Thor_Flash/                  # App WPF (solo UI; referencia al Core)
 ├── docs/                        # WinUSB, flashear firmware
 └── drivers/                     # INF ejemplo Samsung 04E8:685D

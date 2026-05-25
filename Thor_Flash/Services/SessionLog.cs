@@ -7,7 +7,7 @@ namespace Thor_Flash.Services;
 /// <summary>Log de sesión estilo Odin Flash (sin marca de tiempo).</summary>
 public sealed class SessionLog(ColoredLogWriter log) {
     public const string UsbReconnectMessage =
-        "Desconecta, Reinicia modo Download y vuelve a Conectar.";
+        "Disconnect USB, reboot to Download mode, and wait for Ready.";
     public void WriteHeader(string title, string version) {
         log.WriteLine(title);
         log.WriteLine(new string('-', 36));
@@ -35,7 +35,7 @@ public sealed class SessionLog(ColoredLogWriter log) {
 
     public void WriteCalculatedSize(long bytes) {
         var mb = bytes / (1024.0 * 1024.0);
-        WriteLabelValue("Calculated Size", mb.ToString("N3", CultureInfo.CurrentCulture) + " MB");
+        WriteLabelValue("Calculated Size", mb.ToString("N3", CultureInfo.InvariantCulture) + " MB");
     }
 
     public void WriteDeviceIdentity(DeviceDvif.DeviceIdentity id) {

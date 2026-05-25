@@ -62,7 +62,7 @@ public partial class MainWindow : Window {
         try {
             if (!OdinSession.IsPlatformSupported) {
                 var err = USB.GetHandlerError();
-                AppendLog(err != null ? $"ERROR USB: {err}" : "ERROR: Plataforma no soportada.");
+                AppendLog(err != null ? $"ERROR USB: {err}" : "ERROR: Unsupported platform.");
                 return;
             }
 
@@ -78,7 +78,7 @@ public partial class MainWindow : Window {
                 session.Dispose();
             };
         } catch (Exception ex) {
-            AppendLog($"Inicio fallido: {ex.Message}");
+            AppendLog($"Startup failed: {ex.Message}");
             MessageBox.Show(ex.Message, "Thor_Flash", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
@@ -98,7 +98,7 @@ public partial class MainWindow : Window {
             MainTabs.SelectedIndex = 0;
             UpdateConnectionStatus();
         } catch (Exception ex) {
-            AppendLog($"Carga inicial: {ex.Message}");
+            AppendLog($"Initial load: {ex.Message}");
             Log.Debug(ex, "OnLoaded");
             MessageBox.Show(ex.Message, "Thor_Flash", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
@@ -181,7 +181,7 @@ public partial class MainWindow : Window {
 
             UpdateConnectionUi();
         } catch (Exception ex) {
-            AppendLog($"Enumerar: {ex.Message}");
+            AppendLog($"Enumerate: {ex.Message}");
         }
     }
 
@@ -221,7 +221,7 @@ public partial class MainWindow : Window {
                     LogDeviceInfo(pit);
                     if (_session.BootloaderVersion is { } bv) {
                         OdinInfoText.Text =
-                            $"Bootloader Odin v{bv.Version} · chip/proyecto {pit.Project} · {pit.Entries.Count} particiones";
+                            $"Bootloader Odin v{bv.Version} · chip/project {pit.Project} · {pit.Entries.Count} partitions";
                     }
                     UpdateConnectionUi();
                 });
@@ -249,7 +249,7 @@ public partial class MainWindow : Window {
     private void ConnectButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null) return;
         if (DeviceCombo.SelectedItem is not DeviceInfo device) {
-            _sessionLog.WriteMessage("Selecciona un dispositivo.", LogTone.Message);
+            _sessionLog.WriteMessage("Select a device.", LogTone.Message);
             return;
         }
 
@@ -273,7 +273,7 @@ public partial class MainWindow : Window {
                 var hint = ex.Message.Contains("Handshake", StringComparison.OrdinalIgnoreCase)
                     || ex.Message.Contains("Timeout", StringComparison.OrdinalIgnoreCase)
                     || ex.Message.Contains("LOKE", StringComparison.OrdinalIgnoreCase)
-                    ? " Reinicia modo Download, Conectar e Iniciar Odin (una vez). Revisa Zadig interfaz CDC 0x0A."
+                    ? " Reboot to Download mode, use Connect and Begin Odin (once). Check Zadig CDC interface 0x0A."
                     : "";
                 throw new InvalidOperationException(ex.Message + hint, ex);
             }
@@ -297,10 +297,10 @@ public partial class MainWindow : Window {
             _manualEndOdin = true;
             _session.EndOdinSession(tryShutdown: false);
             OdinInfoText.Text = "";
-            AppendLog("Sesión Odin finalizada.");
+            AppendLog("Odin session ended.");
             UpdateConnectionUi();
         } catch (Exception ex) {
-            AppendLog($"Fin sesión: {ex.Message}");
+            AppendLog($"End session: {ex.Message}");
         }
     }
 
@@ -312,11 +312,11 @@ public partial class MainWindow : Window {
             _session.DisconnectUsb();
             OdinInfoText.Text = "";
             _slotGroups.Clear();
-            AppendLog("Desconectado. Reinicia el teléfono en Download para reconectar.");
+            AppendLog("Disconnected. Reboot the phone to Download mode to reconnect.");
             UpdateConnectionUi();
             RefreshDevices();
         } catch (Exception ex) {
-            AppendLog($"Desconectar: {ex.Message}");
+            AppendLog($"Disconnect: {ex.Message}");
         }
     }
 
@@ -359,7 +359,7 @@ public partial class MainWindow : Window {
 
     private async Task<PitData> EnsureDevicePitAsync(CancellationToken ct) {
         if (_session == null || !_session.IsOdinActive)
-            throw new InvalidOperationException("Inicia sesión Odin primero.");
+            throw new InvalidOperationException("Start Odin session first.");
         if (_session.DevicePit != null)
             return _session.DevicePit;
         return await Task.Run(
@@ -374,7 +374,7 @@ public partial class MainWindow : Window {
             await Dispatcher.InvokeAsync(() => {
                 if (_session?.BootloaderVersion is { } v) {
                     OdinInfoText.Text =
-                        $"Bootloader Odin v{v.Version} · chip/proyecto {pit.Project} · {pit.Entries.Count} particiones";
+                        $"Bootloader Odin v{v.Version} · chip/project {pit.Project} · {pit.Entries.Count} partitions";
                 }
                 UpdateConnectionUi();
             });
@@ -411,6 +411,7 @@ public partial class MainWindow : Window {
 
     /// <summary>Cierra el enlace USB muerto y muestra el aviso una sola vez hasta reconectar bien.</summary>
     private void HandleDeadUsbSession() {
+        _suppressAutoUntilRemoved = true;
         if (!_loggedUsbReconnectHint) {
             _loggedUsbReconnectHint = true;
             _sessionLog.WriteMessage(SessionLog.UsbReconnectMessage, LogTone.Error);
@@ -461,7 +462,7 @@ public partial class MainWindow : Window {
     private async Task TryScanFirmwareAsync(bool deferIfNotReady = false) {
         var source = GetFirmwareSourcePath();
         if (source == null) {
-            _sessionLog.WriteMessage("Indica una carpeta o un archivo .tar / .tar.md5 válido.", LogTone.Message);
+            _sessionLog.WriteMessage("Select a folder or a valid .tar / .tar.md5 file.", LogTone.Message);
             return;
         }
 
@@ -471,12 +472,12 @@ public partial class MainWindow : Window {
 
             if (_session == null || !_session.IsOdinActive) {
                 _sessionLog.WriteMessage(deferIfNotReady
-                    ? "Sesión Odin no activa. El firmware se escaneará al estar Ready."
-                    : "Sesión Odin no activa. Espera Ready.", LogTone.Message);
+                    ? "Odin session not active. Firmware will be scanned when Ready."
+                    : "Odin session not active. Wait for Ready.", LogTone.Message);
             } else {
                 _sessionLog.WriteMessage(deferIfNotReady
-                    ? "Esperando PIT… El firmware se escaneará al estar Ready."
-                    : "Espera a que el PIT esté listo (Ready).", LogTone.Message);
+                    ? "Waiting for PIT… Firmware will be scanned when Ready."
+                    : "Wait until PIT is ready (Ready).", LogTone.Message);
             }
             return;
         }
@@ -486,7 +487,7 @@ public partial class MainWindow : Window {
     }
 
     private async Task ScanFirmwareAsync(string source) {
-        await RunBusyAsync("Escaneando firmware…", async ct => {
+        await RunBusyAsync("Scanning firmware…", async ct => {
             var pit = await EnsureDevicePitAsync(ct);
             var scan = await Task.Run(() => OdinOperations.ScanFirmwareSource(source, pit), ct);
             await Dispatcher.InvokeAsync(() => {
@@ -531,7 +532,7 @@ public partial class MainWindow : Window {
         if (_session == null || !_session.IsOdinActive) return;
         var selected = AllPartitionItems.Where(x => x.Selected).ToList();
         if (selected.Count == 0) {
-            _sessionLog.WriteMessage("Marca al menos una partición.", LogTone.Message);
+            _sessionLog.WriteMessage("Select at least one partition.", LogTone.Message);
             return;
         }
 
@@ -539,9 +540,9 @@ public partial class MainWindow : Window {
             _slotGroups
                 .Select(g => (g, count: g.Partitions.Count(x => x.Selected)))
                 .Where(x => x.count > 0)
-                .Select(x => $"• {x.g.DisplayLabel}: {x.count} imagen(es)"));
-        var msg = $"¿Flashear {selected.Count} imagen(es)?\n\n{summary}";
-        if (MessageBox.Show(msg, "Confirmar flash", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                .Select(x => $"• {x.g.DisplayLabel}: {x.count} image(s)"));
+        var msg = $"Flash {selected.Count} image(s)?\n\n{summary}";
+        if (MessageBox.Show(msg, "Confirm flash", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
         SyncOdinOptionsFromUi();
@@ -555,7 +556,7 @@ public partial class MainWindow : Window {
                 _sessionLog.WriteFlashOk(r.CompletedFlashFile);
         });
 
-        await RunBusyAsync("Flasheando…", async ct => {
+        await RunBusyAsync("Flashing…", async ct => {
             await Task.Run(() => OdinOperations.FlashSelected(
                 _session.RequireOdin(), selected, progress, ct), ct);
             await TryAutoRebootAfterFlashAsync(ct);
@@ -574,11 +575,13 @@ public partial class MainWindow : Window {
         MainTabs.Visibility = Visibility.Visible;
         FlashPhasePanel.Visibility = Visibility.Collapsed;
         MainTabs.SelectedIndex = 0;
+        _refreshTimer?.Start();
         UpdateConnectionUi();
     }
 
     private void ShowFlashPhase() {
         _inFlashPhase = true;
+        _refreshTimer?.Stop();
         MainTabs.Visibility = Visibility.Collapsed;
         FlashPhasePanel.Visibility = Visibility.Visible;
         LogBox.ScrollToEnd();
@@ -693,14 +696,14 @@ public partial class MainWindow : Window {
                 HandleDeadUsbSession();
             else
                 _sessionLog.WriteMessage(
-                    $"Reinicio automático: {ex.Message}. Usa la pestaña «Reinicio» si el teléfono sigue en Download.",
+                    $"Auto reboot: {ex.Message}. Use the Reboot tab if the phone stays in Download mode.",
                     LogTone.Message);
         }
     }
 
     private void StopButton_Click(object sender, RoutedEventArgs e) {
         _operationCts?.Cancel();
-        _sessionLog.WriteMessage("Cancelación solicitada…", LogTone.Message);
+        _sessionLog.WriteMessage("Cancel requested…", LogTone.Message);
     }
 
     private void WebsiteLink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
@@ -730,14 +733,14 @@ public partial class MainWindow : Window {
         try {
             await work(_operationCts.Token);
         } catch (OperationCanceledException) {
-            _sessionLog.WriteMessage("Operación cancelada.", LogTone.Message);
+            _sessionLog.WriteMessage("Operation canceled.", LogTone.Message);
         } catch (Exception ex) {
             WriteSessionError(ex);
             if (!IsUsbSessionDead(ex)
                 && (ex.Message.Contains("Auth", StringComparison.OrdinalIgnoreCase)
                     || ex.Message.Contains("OEM", StringComparison.OrdinalIgnoreCase))) {
                 _sessionLog.WriteMessage(
-                    "Auth/OEM: incluye BL en el lote si flasheas bootloader; OEM Unlock en opciones desarrollador; firmware del mismo modelo/región.",
+                    "Auth/OEM: include BL in the batch when flashing bootloader; enable OEM Unlock in developer options; use firmware for the same model/region.",
                     LogTone.Message);
             }
             Log.Debug(ex, "Operation");
@@ -800,7 +803,7 @@ public partial class MainWindow : Window {
 
     private void UpdateConnectionStatus() {
         if (_session == null || (!_session.IsUsbConnected && !_session.IsOdinActive)) {
-            StatusText.Text = "Desconectado";
+            StatusText.Text = "Disconnected";
             StatusText.Foreground = (Brush)FindResource("TfStatusDisconnectedBrush");
             return;
         }
@@ -811,7 +814,7 @@ public partial class MainWindow : Window {
             return;
         }
 
-        StatusText.Text = "Conectado";
+        StatusText.Text = "Connected";
         StatusText.Foreground = (Brush)FindResource("TfReadyWaitingBrush");
     }
 

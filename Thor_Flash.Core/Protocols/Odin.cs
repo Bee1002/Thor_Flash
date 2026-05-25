@@ -25,31 +25,15 @@ public class Odin {
     private int FlashPartAckTimeout = 120000;
     private int FlashPacketSize;
     private int FlashSequence;
-    public bool TFlashEnabled { get; private set; }
     public bool ResetFlashCount;
     public VersionStruct Version;
     public bool BootloaderUpdate;
     public bool EfsClear;
-    private bool _serialFlashMode;
 
     public IHandler Handler => _handler;
-    public bool SerialFlashMode => _serialFlashMode;
-    public int SerialFlashChunkBytes { get; private set; } = 1048576;
-    public int SerialFlashAckDelayMs { get; private set; }
 
     public Odin(IHandler handler)
         => _handler = handler;
-
-    /// <summary>Activa flash LOKE estilo Odin_Flash (COM).</summary>
-    public void ApplyHandlerFlashProfile(IHandler handler) {
-        _serialFlashMode = handler.UsesSerialFlashAlignment;
-        if (!_serialFlashMode)
-            return;
-        SerialFlashChunkBytes = handler.SerialFlashChunkBytes > 0
-            ? handler.SerialFlashChunkBytes
-            : 262144;
-        SerialFlashAckDelayMs = Math.Max(0, handler.SerialFlashAckDelayMs);
-    }
 
     public void Handshake() {
         _handler.PrepareForOdin();
@@ -158,46 +142,6 @@ public class Odin {
             (uint)(totalFileSize & 0xFFFFFFFF),
             (int)(totalFileSize >> 32),
             Version.Version);
-    }
-
-    public void EraseUserData() {
-        var buf = new byte[1024];
-        buf.WriteInt(0x64, 0);
-        buf.WriteInt(0x07, 4);
-        _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read, 600000);
-        if (read != 8) throw new InvalidDataException(
-            $"Received {read} bytes instead of 8!");
-        buf.OdinFailCheck("EraseUserData");
-    }
-    
-    public void EnableTFlash() {
-        if (TFlashEnabled) throw new InvalidOperationException(
-            "T-Flash mode was already enabled!");
-        var buf = new byte[1024];
-        buf.WriteInt(0x64, 0);
-        buf.WriteInt(0x08, 4);
-        _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read, 600000);
-        if (read != 8) throw new InvalidDataException(
-            $"Received {read} bytes instead of 8!");
-        buf.OdinFailCheck("EnableTFlash");
-        TFlashEnabled = true;
-    }
-    
-    public void SetRegionCode(string code) {
-        if (code.Length != 3)
-            throw new InvalidDataException(
-                "Region code should be length of 3!");
-        var buf = new byte[1024];
-        buf.WriteInt(0x64, 0);
-        buf.WriteInt(0x08, 4);
-        buf.WriteString(code, 8);
-        _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read, 600000);
-        if (read != 8) throw new InvalidDataException(
-            $"Received {read} bytes instead of 8!");
-        buf.OdinFailCheck("SetRegionCode");
     }
 
     // End session region, 0x67

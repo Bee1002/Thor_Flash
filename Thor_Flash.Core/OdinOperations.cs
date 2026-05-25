@@ -245,9 +245,6 @@ public static class OdinOperations {
         };
     }
 
-    public static List<FlashPartitionItem> ScanTarFolder(string directory, PitData pit) =>
-        ScanFirmwareSource(directory, pit).Matches;
-
     public static string BuildScanDiagnostics(IReadOnlyList<string> tarPaths, PitData pit) {
         var sb = new StringBuilder();
         sb.AppendLine("Diagnóstico escaneo (sin coincidencias PIT ↔ .tar):");
@@ -586,44 +583,9 @@ public static class OdinOperations {
         return partitionBytes;
     }
 
-    public static long GetPartitionSizeBytes(PitEntry entry) {
-        var size = (long)entry.BlockCount * entry.BlockSize;
-        if (size <= 0)
-            throw new InvalidOperationException(
-                $"La partición {entry.Partition} no tiene tamaño válido en el PIT.");
-        return size;
-    }
-
-    public static void ErasePartition(
-        Odin odin,
-        PitEntry entry,
-        IProgress<FlashProgressReport>? progress = null,
-        CancellationToken cancellationToken = default) {
-        cancellationToken.ThrowIfCancellationRequested();
-        var length = GetPartitionSizeBytes(entry);
-        odin.InitializeFlashTotal(length);
-        progress?.Report(new FlashProgressReport {
-            Message = $"Borrando {entry.Partition} ({length:N0} bytes)…",
-            TotalBytes = length
-        });
-        odin.FlashPartition(null, entry, info => {
-            progress?.Report(MakeFlashReport(
-                info.State == Odin.FlashProgressInfo.StateEnum.Flashing
-                    ? $"Borrando {entry.Partition} (seq {info.SequenceIndex + 1}/{info.TotalSequences})"
-                    : "Preparando borrado…",
-                info, length, 0, length));
-        }, length);
-    }
-
     public static void FlashPitFile(Odin odin, string pitFilePath) {
         var buf = File.ReadAllBytes(pitFilePath);
         _ = new PitData(buf);
         odin.FlashPIT(buf);
-    }
-
-    public static void SetRegionCode(Odin odin, string code) {
-        if (code.Length != 3)
-            throw new ArgumentException("El código de región debe tener 3 caracteres.", nameof(code));
-        odin.SetRegionCode(code.ToUpperInvariant());
     }
 }

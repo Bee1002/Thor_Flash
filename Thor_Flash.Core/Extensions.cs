@@ -3,14 +3,6 @@ using System.Text;
 namespace Protocol.Thor.Library; 
 
 public static class Extensions {
-    public static string Ansify(this string input)
-        => input.Replace("[", "[[").Replace("]", "]]");
-    
-    public static byte[] OdinAlign(this byte[] buf) {
-        Array.Resize(ref buf, 1024);
-        return buf;
-    }
-
     public static void OdinFailCheck(this byte[] buf, string id, bool end = false) {
         if (buf[0] != 0xFF) return;
         var error = buf.ReadInt(4);

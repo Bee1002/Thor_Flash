@@ -1,7 +1,6 @@
 namespace Protocol.Thor.Library.Communication; 
 
 public interface IHandler {
-    public string GetNotes();
     public List<DeviceInfo> GetDevices();
     public void Initialize(string? id, byte[]? direct = null);
     public bool IsConnected();
@@ -24,29 +23,14 @@ public interface IHandler {
     /// <summary>Tras fallo LOKE, probar otra interfaz bulk (solo Windows).</summary>
     bool TryNextOdinInterface() => false;
 
-    /// <summary>Entre particiones (COM: pausa + purgar RX).</summary>
+    /// <summary>Entre particiones del lote NAND.</summary>
     void OnFlashPartitionBoundary() { }
 
     /// <summary>Antes del lote NAND completo.</summary>
     void PrepareForFlashBatch() { ReadZLP(); }
 
-    /// <summary>Consulta DVIF (solo COM/serial; WinUSB Thor no soporta DVIF sin romper LOKE).</summary>
+    /// <summary>Consulta DVIF (WinUSB Thor no soporta DVIF sin romper LOKE).</summary>
     bool SupportsDeviceInfoQuery => false;
-
-    /// <summary>COM: usar <see cref="SerialFlashOperations"/> en lugar de Thor USB.</summary>
-    bool UsesSerialFlashAlignment => false;
-
-    /// <summary>Trozo NAND por ACK en COM (262144); 0 = 1 MiB.</summary>
-    int SerialFlashChunkBytes => 0;
-
-    /// <summary>Espera ms tras cada trozo antes del ACK en COM.</summary>
-    int SerialFlashAckDelayMs => 0;
-
-    /// <summary>Antes de cada sesión NAND (cmd 102/0x66 seq 0).</summary>
-    void PrepareNandSession() { }
-
-    /// <summary>Tras reservar sesión (102,2) y antes del payload.</summary>
-    void DiscardNandPayloadPrefix() { }
 
     byte[] BulkReadExact(int amount, int timeout = 5000) {
         var buf = new byte[amount];
