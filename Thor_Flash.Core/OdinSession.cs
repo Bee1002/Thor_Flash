@@ -158,25 +158,6 @@ public sealed class OdinSession : IDisposable {
         _devicePit = null;
     }
 
-    /// <summary>Reinicio a modo Download (Thor: fin de sesión + rebootToOdin).</summary>
-    public void RebootToOdinDevice() {
-        var odin = RequireOdin();
-        try {
-            odin.EndSession();
-        } catch {
-            /* ignorar */
-        }
-
-        try {
-            odin.RebootToOdin();
-        } catch {
-            odin.Reboot();
-        }
-
-        _odin = null;
-        _devicePit = null;
-    }
-
     public void DisconnectUsb() {
         EndOdinSession();
         if (_handler.IsConnected())

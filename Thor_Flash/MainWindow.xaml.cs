@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -28,8 +29,12 @@ public partial class MainWindow : Window {
     private bool _suppressAutoUntilRemoved;
     private bool _manualEndOdin;
     private bool _sessionHeaderWritten;
+    private bool _scanFirmwareWhenReady;
+    private bool _loggedUsbReconnectHint;
     private DateTime? _flashStartedUtc;
     private long _flashTotalBytes;
+    private PitData? _pitViewData;
+    private bool _inFlashPhase;
 
     private static string AppVersion {
         get {
@@ -42,6 +47,11 @@ public partial class MainWindow : Window {
         InitializeComponent();
         _coloredLog = new ColoredLogWriter(LogBox);
         _sessionLog = new SessionLog(_coloredLog);
+
+        if (DesignerProperties.GetIsInDesignMode(this)) {
+            UpdateConnectionStatus();
+            return;
+        }
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
@@ -85,7 +95,7 @@ public partial class MainWindow : Window {
             await LoadUsbIdsAsync();
             RefreshDevices();
             _refreshTimer.Start();
-            UpdateReadyIndicator();
+            MainTabs.SelectedIndex = 0;
             UpdateConnectionStatus();
         } catch (Exception ex) {
             AppendLog($"Carga inicial: {ex.Message}");
@@ -121,10 +131,24 @@ public partial class MainWindow : Window {
         AppendLog("Tu dispositivo: VID 04E8 PID 685D (Download). El driver Samsung debe cambiarse a WinUSB.");
     }
 
+    private DeviceInfo? GetSelectedOrFirstDevice() {
+        if (DeviceCombo.SelectedItem is DeviceInfo selected)
+            return selected;
+        if (DeviceCombo.Items.Count > 0 && DeviceCombo.Items[0] is DeviceInfo first)
+            return first;
+        return null;
+    }
+
+    private void UpdateDevicePickerVisibility() {
+        DevicePickerPanel.Visibility = DeviceCombo.Items.Count > 1
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private void DiagnoseButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null) return;
         try {
-            var id = DeviceCombo.SelectedItem is DeviceInfo d ? d.Identifier : null;
+            var id = GetSelectedOrFirstDevice()?.Identifier;
             AppendLog(_session.DiagnoseUsb(id));
         } catch (Exception ex) {
             AppendLog($"Diagnóstico: {ex.Message}");
@@ -141,6 +165,7 @@ public partial class MainWindow : Window {
                 DeviceCombo.IsEnabled = devices.Count > 0;
                 if (devices.Count > 0)
                     DeviceCombo.SelectedIndex = 0;
+                UpdateDevicePickerVisibility();
                 if (devices.Count == 0) {
                     _suppressAutoUntilRemoved = false;
                     _manualEndOdin = false;
@@ -150,11 +175,11 @@ public partial class MainWindow : Window {
                     _ = TryAutoPipelineAsync(devices[0]);
             } else if (!_session.IsOdinActive && !_manualEndOdin && !_autoPipelineBusy
                        && !_suppressAutoUntilRemoved
-                       && DeviceCombo.SelectedItem is DeviceInfo dev) {
+                       && GetSelectedOrFirstDevice() is DeviceInfo dev) {
                 _ = TryAutoPipelineAsync(dev);
             }
 
-            UpdateReadyIndicator();
+            UpdateConnectionUi();
         } catch (Exception ex) {
             AppendLog($"Enumerar: {ex.Message}");
         }
@@ -167,7 +192,7 @@ public partial class MainWindow : Window {
             return;
 
         _autoPipelineBusy = true;
-        await Dispatcher.InvokeAsync(UpdateReadyIndicator);
+        await Dispatcher.InvokeAsync(UpdateConnectionUi);
 
         try {
             if (!_session.IsUsbConnected) {
@@ -194,20 +219,23 @@ public partial class MainWindow : Window {
                 _sessionLog.WriteStep("Reading Pit from device", "Ok");
                 await Dispatcher.InvokeAsync(() => {
                     LogDeviceInfo(pit);
-                    BindPitEntries(pit.Entries);
                     if (_session.BootloaderVersion is { } bv) {
                         OdinInfoText.Text =
                             $"Bootloader Odin v{bv.Version} · chip/proyecto {pit.Project} · {pit.Entries.Count} particiones";
                     }
                     UpdateConnectionUi();
                 });
+                _loggedUsbReconnectHint = false;
             }
         } catch (Exception ex) {
-            _sessionLog.WriteMessage(ex.Message, LogTone.Error);
+            if (IsUsbSessionDead(ex))
+                HandleDeadUsbSession();
+            else
+                WriteSessionError(ex);
             Log.Debug(ex, "AutoPipeline");
         } finally {
             _autoPipelineBusy = false;
-            await Dispatcher.InvokeAsync(UpdateReadyIndicator);
+            await Dispatcher.InvokeAsync(UpdateConnectionUi);
         }
     }
 
@@ -218,38 +246,10 @@ public partial class MainWindow : Window {
         _sessionHeaderWritten = true;
     }
 
-    private void UpdateReadyIndicator() {
-        if (_session == null)
-            return;
-
-        Brush fill;
-        string label;
-        if (_autoPipelineBusy) {
-            fill = (Brush)FindResource("TfReadyWaitingBrush");
-            label = "Inicializando dispositivo…";
-        } else if (_session.IsOdinActive && _session.DevicePit != null) {
-            fill = (Brush)FindResource("TfReadyBrush");
-            label = "Listo — selecciona firmware y flashea";
-        } else if (_session.IsUsbConnected) {
-            fill = (Brush)FindResource("TfReadyWaitingBrush");
-            label = _manualEndOdin ? "Sesión Odin finalizada — pulsa «Iniciar Odin»" : "USB conectado — iniciando Odin…";
-        } else if (DeviceCombo.Items.Count > 0) {
-            fill = (Brush)FindResource("TfReadyWaitingBrush");
-            label = "Dispositivo detectado — conectando…";
-        } else {
-            fill = (Brush)FindResource("TfReadyOffBrush");
-            label = "Esperando dispositivo en Download…";
-        }
-
-        ReadyIndicator.Fill = fill;
-        ReadyIndicator.Opacity = _session.IsOdinActive && _session.DevicePit != null ? 1.0 : 0.75;
-        ReadyLabel.Text = label;
-    }
-
     private void ConnectButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null) return;
         if (DeviceCombo.SelectedItem is not DeviceInfo device) {
-            _sessionLog.WriteMessage("Selecciona un dispositivo.", LogTone.Warning);
+            _sessionLog.WriteMessage("Selecciona un dispositivo.", LogTone.Message);
             return;
         }
 
@@ -259,7 +259,7 @@ public partial class MainWindow : Window {
             _sessionLog.WriteStep("Checking Download Mode", "ODIN");
             UpdateConnectionUi();
         } catch (Exception ex) {
-            _sessionLog.WriteMessage(ex.Message, LogTone.Error);
+            WriteSessionError(ex);
             Log.Debug(ex, "Connect");
         }
     }
@@ -299,7 +299,6 @@ public partial class MainWindow : Window {
             OdinInfoText.Text = "";
             AppendLog("Sesión Odin finalizada.");
             UpdateConnectionUi();
-            UpdateReadyIndicator();
         } catch (Exception ex) {
             AppendLog($"Fin sesión: {ex.Message}");
         }
@@ -315,7 +314,6 @@ public partial class MainWindow : Window {
             _slotGroups.Clear();
             AppendLog("Desconectado. Reinicia el teléfono en Download para reconectar.");
             UpdateConnectionUi();
-            UpdateReadyIndicator();
             RefreshDevices();
         } catch (Exception ex) {
             AppendLog($"Desconectar: {ex.Message}");
@@ -330,19 +328,25 @@ public partial class MainWindow : Window {
         _session?.SetFlashOptions(EfsClearCheck.IsChecked == true);
     }
 
-    private void BrowseTarFolder_Click(object sender, RoutedEventArgs e) {
+    private async void BrowseTarFolder_Click(object sender, RoutedEventArgs e) {
         var dlg = new OpenFolderDialog { Title = "Carpeta con firmware Odin (.tar / .tar.md5)" };
-        if (dlg.ShowDialog() == true)
-            TarFolderBox.Text = dlg.FolderName;
+        if (dlg.ShowDialog() != true)
+            return;
+
+        TarFolderBox.Text = dlg.FolderName;
+        await TryScanFirmwareAsync(deferIfNotReady: true);
     }
 
-    private void BrowseTarFile_Click(object sender, RoutedEventArgs e) {
+    private async void BrowseTarFile_Click(object sender, RoutedEventArgs e) {
         var dlg = new OpenFileDialog {
             Title = "Paquete Odin",
             Filter = "Odin tar|*.tar;*.tar.md5|Todos|*.*"
         };
-        if (dlg.ShowDialog() == true)
-            TarFolderBox.Text = dlg.FileName;
+        if (dlg.ShowDialog() != true)
+            return;
+
+        TarFolderBox.Text = dlg.FileName;
+        await TryScanFirmwareAsync(deferIfNotReady: true);
     }
 
     private IProgress<PitDumpProgress> CreatePitProgress(bool silent = false) =>
@@ -368,12 +372,11 @@ public partial class MainWindow : Window {
             var progress = CreatePitProgress(silent: true);
             var pit = await Task.Run(() => _session.GetOrLoadDevicePit(progress));
             await Dispatcher.InvokeAsync(() => {
-                BindPitEntries(pit.Entries);
                 if (_session?.BootloaderVersion is { } v) {
                     OdinInfoText.Text =
                         $"Bootloader Odin v{v.Version} · chip/proyecto {pit.Project} · {pit.Entries.Count} particiones";
                 }
-                UpdateReadyIndicator();
+                UpdateConnectionUi();
             });
             if (useSessionLog) {
                 LogDeviceInfo(pit);
@@ -384,9 +387,7 @@ public partial class MainWindow : Window {
             if (useSessionLog) {
                 _sessionLog.WriteStep("Reading Pit from device", "Failed");
                 if (IsUsbSessionDead(ex))
-                    _sessionLog.WriteMessage(
-                        "Sesión USB inestable tras PIT. Fin sesión → Desconectar → reinicia Download.",
-                        LogTone.Error);
+                    HandleDeadUsbSession();
             }
             Log.Debug(ex, "PreloadDevicePit");
         }
@@ -399,18 +400,92 @@ public partial class MainWindow : Window {
             || msg.Contains("Bulk write failed: Pipe", StringComparison.OrdinalIgnoreCase);
     }
 
-    private async void ScanTarButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) {
-            _sessionLog.WriteMessage("Sesión Odin no activa. Espera el indicador verde.", LogTone.Warning);
-            return;
-        }
-        var source = TarFolderBox.Text.Trim();
-        if (string.IsNullOrEmpty(source)
-            || (!File.Exists(source) && !Directory.Exists(source))) {
-            _sessionLog.WriteMessage("Indica una carpeta o un archivo .tar / .tar.md5 válido.", LogTone.Warning);
+    private void WriteSessionError(Exception ex) {
+        if (IsUsbSessionDead(ex)) {
+            HandleDeadUsbSession();
             return;
         }
 
+        _sessionLog.WriteMessage(ex.Message, LogTone.Error);
+    }
+
+    /// <summary>Cierra el enlace USB muerto y muestra el aviso una sola vez hasta reconectar bien.</summary>
+    private void HandleDeadUsbSession() {
+        if (!_loggedUsbReconnectHint) {
+            _loggedUsbReconnectHint = true;
+            _sessionLog.WriteMessage(SessionLog.UsbReconnectMessage, LogTone.Error);
+        }
+
+        FinalizeUsbLink(silent: true);
+    }
+
+    /// <summary>Tras reinicio del teléfono: soltar USB sin mensaje de error (comportamiento esperado).</summary>
+    private void FinalizeUsbAfterReboot() {
+        _loggedUsbReconnectHint = false;
+        FinalizeUsbLink(silent: true);
+    }
+
+    private void FinalizeUsbLink(bool silent) {
+        if (_session == null)
+            return;
+
+        try {
+            if (_session.IsUsbConnected || _session.IsOdinActive)
+                _session.DisconnectUsb();
+        } catch (Exception ex) {
+            if (!silent)
+                Log.Debug(ex, "FinalizeUsbLink");
+        }
+
+        Dispatcher.BeginInvoke(() => {
+            OdinInfoText.Text = "";
+            UpdateConnectionUi();
+        });
+    }
+
+    private async void ScanTarButton_Click(object sender, RoutedEventArgs e) =>
+        await TryScanFirmwareAsync(deferIfNotReady: false);
+
+    private string? GetFirmwareSourcePath() {
+        var source = TarFolderBox.Text.Trim();
+        if (string.IsNullOrEmpty(source))
+            return null;
+        if (File.Exists(source) || Directory.Exists(source))
+            return source;
+        return null;
+    }
+
+    private bool CanScanFirmwareNow() =>
+        _session != null && _session.IsOdinActive && _session.DevicePit != null && !_busy;
+
+    private async Task TryScanFirmwareAsync(bool deferIfNotReady = false) {
+        var source = GetFirmwareSourcePath();
+        if (source == null) {
+            _sessionLog.WriteMessage("Indica una carpeta o un archivo .tar / .tar.md5 válido.", LogTone.Message);
+            return;
+        }
+
+        if (!CanScanFirmwareNow()) {
+            if (deferIfNotReady)
+                _scanFirmwareWhenReady = true;
+
+            if (_session == null || !_session.IsOdinActive) {
+                _sessionLog.WriteMessage(deferIfNotReady
+                    ? "Sesión Odin no activa. El firmware se escaneará al estar Ready."
+                    : "Sesión Odin no activa. Espera Ready.", LogTone.Message);
+            } else {
+                _sessionLog.WriteMessage(deferIfNotReady
+                    ? "Esperando PIT… El firmware se escaneará al estar Ready."
+                    : "Espera a que el PIT esté listo (Ready).", LogTone.Message);
+            }
+            return;
+        }
+
+        _scanFirmwareWhenReady = false;
+        await ScanFirmwareAsync(source);
+    }
+
+    private async Task ScanFirmwareAsync(string source) {
         await RunBusyAsync("Escaneando firmware…", async ct => {
             var pit = await EnsureDevicePitAsync(ct);
             var scan = await Task.Run(() => OdinOperations.ScanFirmwareSource(source, pit), ct);
@@ -421,8 +496,22 @@ public partial class MainWindow : Window {
             });
 
             if (scan.Matches.Count == 0)
-                _sessionLog.WriteMessage("Please Select Firmware Package and try again", LogTone.Warning);
+                _sessionLog.WriteMessage("Please Select Firmware Package and try again", LogTone.Message);
         });
+    }
+
+    private async Task TryDeferredFirmwareScanAsync() {
+        if (!_scanFirmwareWhenReady || !CanScanFirmwareNow())
+            return;
+
+        var source = GetFirmwareSourcePath();
+        if (source == null) {
+            _scanFirmwareWhenReady = false;
+            return;
+        }
+
+        _scanFirmwareWhenReady = false;
+        await ScanFirmwareAsync(source);
     }
 
     private void SelectAllPartitions_Click(object sender, RoutedEventArgs e) {
@@ -442,7 +531,7 @@ public partial class MainWindow : Window {
         if (_session == null || !_session.IsOdinActive) return;
         var selected = AllPartitionItems.Where(x => x.Selected).ToList();
         if (selected.Count == 0) {
-            _sessionLog.WriteMessage("Marca al menos una partición.", LogTone.Warning);
+            _sessionLog.WriteMessage("Marca al menos una partición.", LogTone.Message);
             return;
         }
 
@@ -456,6 +545,7 @@ public partial class MainWindow : Window {
             return;
 
         SyncOdinOptionsFromUi();
+        ShowFlashPhase();
         _sessionLog.WriteBlank();
         _sessionLog.WriteCalculatedSize(OdinOperations.SumSelectedBytes(selected));
         var progress = new Progress<FlashProgressReport>(r => {
@@ -473,66 +563,26 @@ public partial class MainWindow : Window {
         }, trackFlashActivity: true, flashTotalBytes: OdinOperations.SumSelectedBytes(selected));
     }
 
-    private void BrowseSingleFile_Click(object sender, RoutedEventArgs e) {
-        var dlg = new OpenFileDialog {
-            Title = "Imagen a flashear",
-            Filter = "Imágenes|*.img;*.bin;*.lz4;*.mbn;*.tar;*.md5|Todos|*.*"
-        };
-        if (dlg.ShowDialog() == true)
-            SingleFileBox.Text = dlg.FileName;
+    private void NewFlashButton_Click(object sender, RoutedEventArgs e) {
+        if (_busy)
+            return;
+        ShowSetupPhase();
     }
 
-    private async void FlashFileButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) return;
-        var path = SingleFileBox.Text.Trim();
-        if (!File.Exists(path)) {
-            AppendLog("Archivo no válido.");
-            return;
-        }
+    private void ShowSetupPhase() {
+        _inFlashPhase = false;
+        MainTabs.Visibility = Visibility.Visible;
+        FlashPhasePanel.Visibility = Visibility.Collapsed;
+        MainTabs.SelectedIndex = 0;
+        UpdateConnectionUi();
+    }
 
-        PitEntry entry;
-        if (PartitionCombo.SelectedItem is PitEntry chosen)
-            entry = chosen;
-        else {
-            PitData pit;
-            try {
-                pit = _session.DevicePit ?? await Task.Run(() => _session.GetOrLoadDevicePit(CreatePitProgress()));
-                await Dispatcher.InvokeAsync(() => {
-                    PartitionCombo.ItemsSource = pit.Entries;
-                    PartitionCombo.IsEnabled = true;
-                });
-            } catch (Exception ex) {
-                AppendLog($"PIT: {ex.Message}");
-                return;
-            }
-
-            var name = Path.GetFileName(path);
-            var matched = OdinOperations.FindPitEntryByFileName(pit, name);
-            entry = matched
-                ?? pit.Entries.FirstOrDefault()
-                ?? throw new InvalidOperationException("No hay entradas PIT.");
-            if (matched == null)
-                AppendLog($"Aviso: «{name}» no coincide con el PIT; usando partición {entry.Partition}.");
-        }
-
-        if (MessageBox.Show($"¿Flashear en partición {entry.Partition}?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        SyncOdinOptionsFromUi();
-        var progress = new Progress<FlashProgressReport>(r => {
-            UpdateFlashProgress(r);
-            SetFlashActivity(r.Message);
-            if (!string.IsNullOrEmpty(r.CompletedFlashFile))
-                _sessionLog.WriteFlashOk(r.CompletedFlashFile);
-        });
-
-        await RunBusyAsync("Flasheando archivo…", async ct => {
-            await Task.Run(() => OdinOperations.FlashSingleFile(
-                _session.RequireOdin(), path, entry, progress, ct), ct);
-            await TryAutoRebootAfterFlashAsync(ct);
-            WriteFlashCompletedSummary();
-        }, trackFlashActivity: true, flashTotalBytes: new FileInfo(path).Length);
+    private void ShowFlashPhase() {
+        _inFlashPhase = true;
+        MainTabs.Visibility = Visibility.Collapsed;
+        FlashPhasePanel.Visibility = Visibility.Visible;
+        LogBox.ScrollToEnd();
+        UpdateConnectionUi();
     }
 
     private async void DumpPitButton_Click(object sender, RoutedEventArgs e) {
@@ -557,23 +607,29 @@ public partial class MainWindow : Window {
         await RunBusyAsync("Leyendo PIT…", async ct => {
             var progress = CreatePitProgress();
             var pit = await Task.Run(() => _session.GetOrLoadDevicePit(progress), ct);
-            var text = OdinOperations.FormatPit(pit);
-            await Dispatcher.InvokeAsync(() => PitViewBox.Text = text);
+            await Dispatcher.InvokeAsync(() => {
+                _pitViewData = pit;
+                RefreshPitView();
+            });
             AppendLog($"PIT: {pit.Entries.Count} entradas, proyecto {pit.Project}");
-            await Dispatcher.InvokeAsync(() => BindPitEntries(pit.Entries));
         });
     }
 
-    private void BindPitEntries(IList<PitEntry> entries) {
-        PartitionCombo.ItemsSource = entries;
-        PartitionCombo.IsEnabled = !_busy && entries.Count > 0;
-        ErasePartitionCombo.ItemsSource = entries;
-        ErasePartitionCombo.IsEnabled = !_busy && entries.Count > 0;
-        if (PartitionCombo.SelectedItem == null && entries.Count > 0)
-            PartitionCombo.SelectedIndex = 0;
-        if (ErasePartitionCombo.SelectedItem == null && entries.Count > 0)
-            ErasePartitionCombo.SelectedIndex = 0;
+    private PitDisplayOptions GetPitDisplayOptions() => new() {
+        ShowAllEntries = PitShowAllCheck.IsChecked == true,
+        ShowAdvancedDetails = PitShowAdvancedCheck.IsChecked == true,
+    };
+
+    private void RefreshPitView() {
+        if (_pitViewData == null) {
+            PitViewBox.Text = "";
+            return;
+        }
+
+        PitViewBox.Text = OdinOperations.FormatPit(_pitViewData, GetPitDisplayOptions());
     }
+
+    private void PitViewOption_Changed(object sender, RoutedEventArgs e) => RefreshPitView();
 
     private async void FlashPitButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null || !_session.IsOdinActive) return;
@@ -590,90 +646,35 @@ public partial class MainWindow : Window {
         });
     }
 
-    private async void SetRegionButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) return;
-        var code = RegionCodeBox.Text.Trim().ToUpperInvariant();
-        if (code.Length != 3) {
-            AppendLog("Código de región: exactamente 3 letras.");
-            return;
-        }
-
-        await RunBusyAsync("Aplicando región…", async ct => {
-            await Task.Run(() => OdinOperations.SetRegionCode(_session.RequireOdin(), code), ct);
-            AppendLog($"Código de región aplicado: {code}");
-        });
-    }
-
-    private async void ErasePartitionButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) return;
-        if (ErasePartitionCombo.SelectedItem is not PitEntry entry) {
-            AppendLog("Selecciona una partición del PIT.");
-            return;
-        }
-
-        long size;
-        try {
-            size = OdinOperations.GetPartitionSizeBytes(entry);
-        } catch (Exception ex) {
-            AppendLog(ex.Message);
-            return;
-        }
-
-        if (MessageBox.Show($"¿Borrar permanentemente «{entry.Partition}» ({size:N0} bytes)?",
-                "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        var progress = new Progress<FlashProgressReport>(r => {
-            UpdateFlashProgress(r);
-        });
-
-        await RunBusyAsync("Borrando partición…", async ct => {
-            await Task.Run(() => OdinOperations.ErasePartition(
-                _session.RequireOdin(), entry, progress, ct), ct);
-            AppendLog($"Partición borrada: {entry.Partition}.");
-        });
-    }
-
     private void PrintPitFileButton_Click(object sender, RoutedEventArgs e) {
         var dlg = new OpenFileDialog { Filter = "PIT|*.pit|Todos|*.*" };
         if (dlg.ShowDialog() != true) return;
         try {
-            var pit = new PitData(dlg.FileName);
-            PitViewBox.Text = OdinOperations.FormatPit(pit);
-            AppendLog($"PIT cargado desde archivo ({pit.Entries.Count} entradas).");
+            _pitViewData = new PitData(dlg.FileName);
+            RefreshPitView();
+            AppendLog($"PIT cargado desde archivo ({_pitViewData.Entries.Count} entradas).");
         } catch (Exception ex) {
             AppendLog($"PIT inválido: {ex.Message}");
         }
     }
 
-    private async void FactoryResetButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) return;
-        if (MessageBox.Show("¿Borrar partición userdata (factory reset)? Puede tardar varios minutos.",
-                "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        await RunBusyAsync("Borrando userdata…", async ct => {
-            await Task.Run(() => _session.RequireOdin().EraseUserData(), ct);
-            AppendLog("Userdata borrada.");
-        });
-    }
-
     private async void RebootButton_Click(object sender, RoutedEventArgs e) {
         if (_session == null || !_session.IsOdinActive) return;
         await RunBusyAsync("Reiniciando…", async ct => {
-            await Task.Run(() => _session.RebootDevice(), ct);
-            await Dispatcher.InvokeAsync(() => OdinInfoText.Text = "");
-            AppendLog("Comando de reinicio enviado.");
+            await RunDeviceRebootAsync(() => _session.RebootDevice(), ct);
+            await Dispatcher.InvokeAsync(() =>
+                _sessionLog.WriteStep("Rebooting Device To Normal Mode", "Ok"));
+            FinalizeUsbAfterReboot();
         });
     }
 
-    private async void RebootOdinButton_Click(object sender, RoutedEventArgs e) {
-        if (_session == null || !_session.IsOdinActive) return;
-        await RunBusyAsync("Reiniciando a Download…", async ct => {
-            await Task.Run(() => _session.RebootToOdinDevice(), ct);
-            await Dispatcher.InvokeAsync(() => OdinInfoText.Text = "");
-            AppendLog("Reinicio a modo Odin enviado.");
-        });
+    private async Task RunDeviceRebootAsync(Action reboot, CancellationToken ct) {
+        try {
+            await Task.Run(reboot, ct);
+        } catch (Exception ex) when (IsUsbSessionDead(ex)) {
+            // Tras enviar el reinicio el enlace USB suele caer; no es un fallo del usuario.
+            Log.Debug(ex, "Device reboot USB drop (expected)");
+        }
     }
 
     private async Task TryAutoRebootAfterFlashAsync(CancellationToken ct) {
@@ -681,29 +682,25 @@ public partial class MainWindow : Window {
             return;
 
         try {
-            await Task.Run(() => _session.RebootAfterFlash(), ct);
+            await RunDeviceRebootAsync(() => _session.RebootAfterFlash(), ct);
             _sessionLog.WriteStep("Rebooting Device To Normal Mode", "Ok");
-            await Dispatcher.InvokeAsync(() => {
-                OdinInfoText.Text = "";
-                _suppressAutoUntilRemoved = true;
-            });
-            try {
-                _session.DisconnectUsb();
-            } catch {
-                /* enlace USB caducado tras reinicio — esperado */
-            }
+            await Dispatcher.InvokeAsync(() => _suppressAutoUntilRemoved = true);
+            FinalizeUsbAfterReboot();
             await Dispatcher.InvokeAsync(UpdateConnectionUi);
         } catch (Exception ex) {
             _sessionLog.WriteStep("Rebooting Device To Normal Mode", "Failed");
-            _sessionLog.WriteMessage(
-                $"Reinicio automático: {ex.Message}. Usa la pestaña «Reinicio» si el teléfono sigue en Download.",
-                LogTone.Warning);
+            if (IsUsbSessionDead(ex))
+                HandleDeadUsbSession();
+            else
+                _sessionLog.WriteMessage(
+                    $"Reinicio automático: {ex.Message}. Usa la pestaña «Reinicio» si el teléfono sigue en Download.",
+                    LogTone.Message);
         }
     }
 
     private void StopButton_Click(object sender, RoutedEventArgs e) {
         _operationCts?.Cancel();
-        _sessionLog.WriteMessage("Cancelación solicitada…", LogTone.Warning);
+        _sessionLog.WriteMessage("Cancelación solicitada…", LogTone.Message);
     }
 
     private void WebsiteLink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
@@ -733,19 +730,16 @@ public partial class MainWindow : Window {
         try {
             await work(_operationCts.Token);
         } catch (OperationCanceledException) {
-            _sessionLog.WriteMessage("Operación cancelada.", LogTone.Warning);
+            _sessionLog.WriteMessage("Operación cancelada.", LogTone.Message);
         } catch (Exception ex) {
-            _sessionLog.WriteMessage(ex.Message, LogTone.Error);
-            if (ex.Message.Contains("Auth", StringComparison.OrdinalIgnoreCase)
-                || ex.Message.Contains("OEM", StringComparison.OrdinalIgnoreCase)) {
+            WriteSessionError(ex);
+            if (!IsUsbSessionDead(ex)
+                && (ex.Message.Contains("Auth", StringComparison.OrdinalIgnoreCase)
+                    || ex.Message.Contains("OEM", StringComparison.OrdinalIgnoreCase))) {
                 _sessionLog.WriteMessage(
                     "Auth/OEM: incluye BL en el lote si flasheas bootloader; OEM Unlock en opciones desarrollador; firmware del mismo modelo/región.",
-                    LogTone.Warning);
+                    LogTone.Message);
             }
-            if (IsUsbSessionDead(ex))
-                _sessionLog.WriteMessage(
-                    "Desconecta, reinicia modo Download y vuelve a conectar (sesión USB caducada).",
-                    LogTone.Error);
             Log.Debug(ex, "Operation");
         } finally {
             if (trackFlashActivity) {
@@ -758,6 +752,8 @@ public partial class MainWindow : Window {
             StopButton.IsEnabled = false;
             SetUiEnabled(true);
             UpdateConnectionUi();
+            if (_inFlashPhase)
+                LogBox.ScrollToEnd();
             FlashProgress.Value = 0;
             FlashPartitionProgress.Value = 0;
         }
@@ -771,42 +767,35 @@ public partial class MainWindow : Window {
         var usb = _session.IsUsbConnected;
         var odin = _session.IsOdinActive;
         var pitReady = _session.DevicePit != null;
+        var flashReady = odin && pitReady;
 
         DeviceCombo.IsEnabled = !usb && !_busy;
         RefreshButton.IsEnabled = !_busy;
         DiagnoseButton.IsEnabled = !_busy;
-        ConnectButton.IsEnabled = !usb && !_busy;
+        DriverHelpButton.IsEnabled = !_busy;
+        ConnectButton.IsEnabled = !usb && !_busy && DeviceCombo.Items.Count > 0;
         BeginOdinButton.IsEnabled = usb && !odin && !_busy;
         EndOdinButton.IsEnabled = odin && !_busy;
         DisconnectButton.IsEnabled = usb && !_busy;
 
-        FlashTab.IsEnabled = odin;
-        SingleFileTab.IsEnabled = odin;
-        PitTab.IsEnabled = odin;
-        AdvancedTab.IsEnabled = odin;
-        RebootTab.IsEnabled = odin;
-        ScanTarButton.IsEnabled = odin && pitReady && !_busy;
-        FlashTarButton.IsEnabled = odin && pitReady && !_busy && AllPartitionItems.Any();
-        FlashFileButton.IsEnabled = odin && !_busy;
-        DumpPitButton.IsEnabled = odin && !_busy;
-        PrintPitDeviceButton.IsEnabled = odin && !_busy;
-        FactoryResetButton.IsEnabled = odin && !_busy;
-        FlashPitButton.IsEnabled = odin && !_busy;
-        SetRegionButton.IsEnabled = odin && !_busy;
-        ErasePartitionButton.IsEnabled = odin && !_busy;
+        FlashOptionsPanel.IsEnabled = flashReady && !_busy && !_inFlashPhase;
+        FlashPartitionsPanel.IsEnabled = flashReady && !_busy && !_inFlashPhase;
+        ScanTarButton.IsEnabled = flashReady && !_busy && !_inFlashPhase;
+        FlashTarButton.IsEnabled = flashReady && !_busy && !_inFlashPhase && AllPartitionItems.Any();
+        DumpPitButton.IsEnabled = odin && !_busy && !_inFlashPhase;
+        PrintPitDeviceButton.IsEnabled = odin && !_busy && !_inFlashPhase;
+        FlashPitButton.IsEnabled = odin && !_busy && !_inFlashPhase;
+        RebootDeviceButton.IsEnabled = odin && !_busy && !_inFlashPhase;
 
-        if (odin && _session.DevicePit != null) {
-            PartitionCombo.ItemsSource = _session.DevicePit.Entries;
-            PartitionCombo.IsEnabled = !_busy;
-        } else if (!odin) {
-            PartitionCombo.ItemsSource = null;
-            PartitionCombo.IsEnabled = false;
-            ErasePartitionCombo.ItemsSource = null;
-            ErasePartitionCombo.IsEnabled = false;
-        }
+        NewFlashButton.Visibility = _inFlashPhase ? Visibility.Visible : Visibility.Collapsed;
+        NewFlashButton.IsEnabled = _inFlashPhase && !_busy;
+        ConnectionExpander.IsEnabled = !_inFlashPhase || !_busy;
+
+        UpdateDevicePickerVisibility();
 
         UpdateConnectionStatus();
-        UpdateReadyIndicator();
+        if (_scanFirmwareWhenReady && odin && pitReady)
+            _ = TryDeferredFirmwareScanAsync();
     }
 
     private void UpdateConnectionStatus() {

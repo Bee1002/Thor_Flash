@@ -223,17 +223,6 @@ public class Odin {
         buf.OdinFailCheck("Reboot");
     }
     
-    public void RebootToOdin() {
-        var buf = new byte[1024];
-        buf.WriteInt(0x67, 0);
-        buf.WriteInt(0x02, 4);
-        _handler.BulkWrite(buf);
-        buf = _handler.BulkRead(8, out var read);
-        if (read != 8) throw new InvalidDataException(
-            $"Received {read} bytes instead of 8!");
-        buf.OdinFailCheck("RebootToOdin");
-    }
-    
     public void Shutdown() {
         var buf = new byte[1024];
         buf.WriteInt(0x67, 0);

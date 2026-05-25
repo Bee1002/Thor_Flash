@@ -45,9 +45,9 @@ Ejecutable: `Thor_Flash\bin\Release\net8.0-windows\Thor_Flash.exe`
 | `dumpPit` | PIT → Volcar PIT del dispositivo |
 | `printPit` | Ver PIT (dispositivo / archivo) |
 | `flashPit` | PIT → Flashear PIT desde archivo |
-| `factoryReset` | PIT → Borrar userdata |
-| `erasePartition` | Avanzado → Borrar partición |
-| `setRegion` | Avanzado → Código de región |
+| `factoryReset` | No disponible en la interfaz WPF |
+| `erasePartition` | No disponible en la interfaz WPF |
+| `setRegion` | No disponible en la interfaz WPF |
 | `options efsclear` | Flash firmware → casilla **EFS Clear** |
 | `options blupdate/resetfc` | Automático en el motor al flashear `.tar` (BL en lote → bootloader update; reset flash count al final) |
 | `reboot` / reinicio Odin | Reinicio (+ **Reinicio automático** tras flash) |

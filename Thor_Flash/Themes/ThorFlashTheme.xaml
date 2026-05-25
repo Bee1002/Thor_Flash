@@ -358,8 +358,8 @@
         <Setter Property="IsReadOnly" Value="True"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
-        <Setter Property="FontFamily" Value="Courier New"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Courier New"/>
+        <Setter Property="FontSize" Value="10.5"/>
         <Setter Property="Padding" Value="8"/>
         <Setter Property="Opacity" Value="0.96"/>
     </Style>
@@ -367,8 +367,8 @@
     <Style x:Key="TfLogTextBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="Background" Value="{StaticResource TfLogBgBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TfLogTextBrush}"/>
-        <Setter Property="FontFamily" Value="Courier New"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Courier New"/>
+        <Setter Property="FontSize" Value="10.5"/>
         <Setter Property="Opacity" Value="0.96"/>
     </Style>
 

@@ -33,4 +33,11 @@
     </None>
   </ItemGroup>
 
+  <!-- VS XAML designer needs *.designer.deps.json under obj/Debug; a normal build does not create it. -->
+  <Target Name="EnsureDesignerSupportArtifacts"
+          AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Debug' and '$(DesignTimeBuild)' != 'true'">
+    <CallTarget Targets="_GenerateDesignerDepsFile;_GenerateDesignerRuntimeConfigFile" />
+  </Target>
+
 </Project>

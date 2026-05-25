@@ -6,28 +6,29 @@ using System.Windows.Threading;
 
 namespace Thor_Flash.Services;
 
+/// <summary>Tonos del log — mismos colores que Odin_Flash (Message #A0A0A0, Result cyan, Error yellowgreen).</summary>
 public enum LogTone {
-    Session,
-    Success,
+    /// <summary>Etiquetas y mensajes: «Model Number :», «Flashing …:».</summary>
+    Message,
+    /// <summary>Valores y resultados: «SM-A326B», «Ok», « : Ok».</summary>
+    Result,
+    /// <summary>Errores y fallos.</summary>
     Error,
-    Warning,
+    /// <summary>Log técnico interno (no sesión Odin).</summary>
     Diagnostic
 }
 
-/// <summary>Log con colores estilo Odin Flash (#59b369, cyan, orange…).</summary>
 public sealed class ColoredLogWriter(RichTextBox target) {
-    static readonly SolidColorBrush SessionBrush = Create("#59B369");
-    static readonly SolidColorBrush SuccessBrush = Brushes.Cyan;
+    static readonly SolidColorBrush MessageBrush = Create("#A0A0A0");
+    static readonly SolidColorBrush ResultBrush = Brushes.Cyan;
     static readonly SolidColorBrush ErrorBrush = Brushes.YellowGreen;
-    static readonly SolidColorBrush WarningBrush = Brushes.Orange;
-    static readonly SolidColorBrush DiagnosticBrush = Create("#90A4AE");
+    static readonly SolidColorBrush DiagnosticBrush = Create("#707880");
 
-    public void WriteLine(string text, LogTone tone = LogTone.Session) {
+    public void WriteLine(string text, LogTone tone = LogTone.Message) {
         if (string.IsNullOrEmpty(text))
             return;
 
         if (!target.Dispatcher.CheckAccess()) {
-            // BeginInvoke evita deadlock si el hilo UI espera progreso USB/PIT.
             target.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => WriteLine(text, tone));
             return;
         }
@@ -37,16 +38,15 @@ public sealed class ColoredLogWriter(RichTextBox target) {
         };
         range.ApplyPropertyValue(TextElement.ForegroundProperty, GetBrush(tone));
         range.ApplyPropertyValue(TextElement.FontWeightProperty,
-            tone is LogTone.Success or LogTone.Error ? FontWeights.Bold : FontWeights.Normal);
+            tone == LogTone.Result ? FontWeights.Bold : FontWeights.Normal);
         target.ScrollToEnd();
     }
 
     private static Brush GetBrush(LogTone tone) => tone switch {
-        LogTone.Success => SuccessBrush,
+        LogTone.Result => ResultBrush,
         LogTone.Error => ErrorBrush,
-        LogTone.Warning => WarningBrush,
         LogTone.Diagnostic => DiagnosticBrush,
-        _ => SessionBrush
+        _ => MessageBrush
     };
 
     private static SolidColorBrush Create(string hex) {

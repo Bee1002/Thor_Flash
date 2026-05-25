@@ -192,34 +192,8 @@ public static class OdinOperations {
         return loose;
     }
 
-    public static PitEntry? FindPitEntryByFileName(PitData pit, string fileName) =>
-        TryMatchPitEntry(pit, Path.GetFileName(fileName));
-
-    public static string FormatPit(PitData data) {
-        var sb = new StringBuilder();
-        sb.AppendLine("=== PIT ===");
-        sb.AppendLine($"Proyecto: {data.Project}");
-        sb.AppendLine($"Unknown: {data.Unknown}");
-        sb.AppendLine($"Versión tabla: {(data.IsNewVersion ? "v2" : "v1")}");
-        sb.AppendLine($"Entradas: {data.Entries.Count}");
-        sb.AppendLine();
-
-        var mapper = data.Mapper;
-        for (var i = 0; i < data.Entries.Count; i++) {
-            var e = data.Entries[i];
-            sb.AppendLine($"--- Entrada #{i} ---");
-            sb.AppendLine($"  Partición: {e.Partition} (id {e.PartitionId})");
-            sb.AppendLine($"  Archivo: {e.FileName}");
-            sb.AppendLine($"  BinaryType: {mapper.BinaryType[e.BinaryType + 1]} ({e.BinaryType})");
-            sb.AppendLine($"  DeviceType: {mapper.DeviceType[e.DeviceType + 1]} ({e.DeviceType})");
-            sb.AppendLine($"  Bloques: {e.BlockCount} x {e.BlockSize}");
-            if (!string.IsNullOrWhiteSpace(e.DeltaName))
-                sb.AppendLine($"  Delta: {e.DeltaName}");
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
-    }
+    public static string FormatPit(PitData data, PitDisplayOptions? options = null) =>
+        PitDisplayFormatter.Format(data, options);
 
     public static TarScanResult ScanFirmwareSource(string path, PitData pit) {
         var tarPaths = ResolveTarPaths(path).ToList();
@@ -610,52 +584,6 @@ public static class OdinOperations {
         }
 
         return partitionBytes;
-    }
-
-    public static void FlashSingleFile(
-        Odin odin,
-        string filePath,
-        PitEntry pitEntry,
-        IProgress<FlashProgressReport>? progress = null,
-        CancellationToken cancellationToken = default) {
-        cancellationToken.ThrowIfCancellationRequested();
-        var file = File.OpenRead(filePath);
-        Stream stream = file;
-        var ownsExtra = false;
-        if (filePath.EndsWith(".lz4", StringComparison.OrdinalIgnoreCase)) {
-            stream = LZ4Stream.Decode(file);
-            ownsExtra = true;
-        }
-
-        try {
-            var fileBytes = filePath.EndsWith(".lz4", StringComparison.OrdinalIgnoreCase)
-                ? ReadLz4DecompressedSize(filePath, 0, Path.GetFileName(filePath))
-                : stream.Length;
-            odin.Handler.PrepareForOdin();
-            odin.Handler.PrepareForFlashBatch();
-            odin.InitializeFlashTotal(fileBytes);
-            progress?.Report(MakeFlashReport(
-                $"Flasheando {Path.GetFileName(filePath)} → {pitEntry.Partition}…",
-                null, fileBytes, 0, fileBytes));
-            odin.FlashPartition(stream, pitEntry, info => {
-                var detail = info.State == Odin.FlashProgressInfo.StateEnum.Flashing
-                    ? $"Escribiendo {pitEntry.Partition}"
-                    : "Enviando datos…";
-                progress?.Report(MakeFlashReport(detail, info, fileBytes, 0, fileBytes));
-            }, fileBytes);
-            progress?.Report(new FlashProgressReport {
-                CompletedFlashFile = Path.GetFileName(filePath),
-                SentBytes = fileBytes,
-                TotalBytes = fileBytes,
-                PartitionSentBytes = fileBytes,
-                PartitionTotalBytes = fileBytes
-            });
-            odin.SendResetFlashCount();
-        } finally {
-            if (ownsExtra)
-                stream.Dispose();
-            file.Dispose();
-        }
     }
 
     public static long GetPartitionSizeBytes(PitEntry entry) {

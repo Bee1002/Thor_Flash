@@ -29,7 +29,7 @@ public static class FieldMapper {
             "Device Type",
             "OneNAND", "NAND",
             "EMMC", "SPI", "IDE",
-            "NAND X16"
+            "NAND X16", "MoviNAND", "Reserved", "UFS"
         }, new[] { 
             "Partition Type",
             "None", "BCT",
@@ -74,6 +74,6 @@ public static class FieldMapper {
     /// <param name="array">Array</param>
     /// <param name="index">Index</param>
     /// <returns>Mapped string</returns>
-    public static string GetMapping(this string[] array, int index)
-        => index > array.Length ? "Unknown" : array[index];
+    public static string GetMapping(this string[] array, int index) =>
+        (uint)index >= (uint)array.Length ? $"Unknown ({index})" : array[index];
 }
